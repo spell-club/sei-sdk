@@ -1,0 +1,160 @@
+package sei_sdk
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/tx"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
+)
+
+func (c *Client) AsyncBroadcastMsg(msgs ...sdk.Msg) (*txtypes.BroadcastTxResponse, error) {
+	ctx := context.Background()
+	c.syncMux.Lock()
+	defer c.syncMux.Unlock()
+
+	sequence := c.getAccSeq()
+	c.txFactory = c.txFactory.WithSequence(sequence)
+	c.txFactory = c.txFactory.WithAccountNumber(c.accNum)
+
+	res, err := c.broadcastTx(ctx, c.txFactory, msgs...)
+	if err != nil {
+		if strings.Contains(err.Error(), "account sequence mismatch") {
+			c.syncNonce()
+
+			sequence = c.getAccSeq()
+			c.txFactory = c.txFactory.WithSequence(sequence)
+			c.txFactory = c.txFactory.WithAccountNumber(c.accNum)
+
+			res, err = c.broadcastTx(ctx, c.txFactory, msgs...)
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return res, nil
+}
+
+func (c *Client) broadcastTx(ctx context.Context, txf tx.Factory, msgs ...sdk.Msg) (*txtypes.BroadcastTxResponse, error) {
+	txf, err := c.prepareFactory(c.ctx, txf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepareFactory: %s", err)
+	}
+
+	simTxBytes, err := txf.BuildSimTx(msgs...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to BuildSimTx: %s", err)
+	}
+	simRes, err := c.txClient.Simulate(ctx, &txtypes.SimulateRequest{TxBytes: simTxBytes})
+	if err != nil {
+		return nil, fmt.Errorf("failed to CalculateGas: %s", err)
+	}
+
+	adjustedGas := uint64(txf.GasAdjustment() * float64(simRes.GasInfo.GetGasUsed()))
+	txf.WithGas(adjustedGas)
+
+	txn, err := txf.BuildUnsignedTx(msgs...)
+	if err != nil {
+		return nil, fmt.Errorf("BuildUnsignedTx: %s", err)
+	}
+
+	txn.SetFeeGranter(c.ctx.GetFeeGranterAddress())
+	err = tx.Sign(txf, c.ctx.GetFromName(), txn, true)
+	if err != nil {
+		return nil, fmt.Errorf("failed to Sign Tx: %s", err)
+	}
+
+	txBytes, err := c.ctx.TxConfig.TxEncoder()(txn.GetTx())
+	if err != nil {
+		return nil, fmt.Errorf("failed TxEncoder to encode Tx: %s", err)
+	}
+
+	req := txtypes.BroadcastTxRequest{
+		TxBytes: txBytes,
+		Mode:    txtypes.BroadcastMode_BROADCAST_MODE_SYNC,
+	}
+	// use our own client to broadcast tx
+	res, err := c.txClient.BroadcastTx(ctx, &req)
+	if err != nil {
+		return res, err
+	}
+	if res.GetTxResponse() == nil {
+		return res, fmt.Errorf("empty response: %+v", res)
+	}
+	if res.GetTxResponse().RawLog != "" {
+		return res, fmt.Errorf("non empty log: %s", res.GetTxResponse().RawLog)
+	}
+
+	return res, nil
+}
+
+func (*Client) prepareFactory(clientCtx client.Context, txf tx.Factory) (tx.Factory, error) {
+	from := clientCtx.GetFromAddress()
+
+	if err := txf.AccountRetriever().EnsureExists(clientCtx, from); err != nil {
+		return txf, err
+	}
+
+	initNum, initSeq := txf.AccountNumber(), txf.Sequence()
+	if initNum == 0 || initSeq == 0 {
+		num, seq, err := txf.AccountRetriever().GetAccountNumberSequence(clientCtx, from)
+		if err != nil {
+			return txf, err
+		}
+
+		if initNum == 0 {
+			txf = txf.WithAccountNumber(num)
+		}
+
+		if initSeq == 0 {
+			txf = txf.WithSequence(seq)
+		}
+	}
+
+	return txf, nil
+}
+
+func (c *Client) getAccSeq() uint64 {
+	defer func() {
+		c.accSeq++
+	}()
+	return c.accSeq
+}
+
+func (c *Client) syncNonce() {
+	num, seq, err := c.txFactory.AccountRetriever().GetAccountNumberSequence(c.ctx, c.ctx.GetFromAddress())
+	if err != nil {
+		return
+	} else if num != c.accNum {
+		return
+	}
+
+	c.accSeq = seq
+}
+
+func (c *Client) syncTimeoutHeight() {
+	t := time.NewTicker(defaultTimeoutHeightSyncInterval)
+	defer t.Stop()
+
+	for {
+		block, err := c.ctx.Client.Block(c.cancelCtx, nil)
+		if err != nil {
+			continue
+		}
+
+		c.txFactory.WithTimeoutHeight(uint64(block.Block.Height) + defaultTimeoutHeight)
+
+		select {
+		case <-c.cancelCtx.Done():
+			return
+		case <-t.C:
+			continue
+		}
+	}
+}
