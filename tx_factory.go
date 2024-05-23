@@ -24,7 +24,7 @@ import (
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 )
 
-func NewTxFactory(clientCtx client.Context) txf.Factory { //nolint:signing
+func newTxFactory(clientCtx client.Context) txf.Factory { //nolint:signing
 	return new(txf.Factory).
 		WithKeybase(clientCtx.Keyring).
 		WithTxConfig(clientCtx.TxConfig).
@@ -35,7 +35,7 @@ func NewTxFactory(clientCtx client.Context) txf.Factory { //nolint:signing
 		WithSignMode(signing.SignMode_SIGN_MODE_DIRECT)
 }
 
-func NewTxConfig(signModes []signingtypes.SignMode) client.TxConfig {
+func newTxConfig(signModes []signingtypes.SignMode) client.TxConfig {
 	interfaceRegistry := codecTypes.NewInterfaceRegistry()
 	std.RegisterInterfaces(interfaceRegistry)
 

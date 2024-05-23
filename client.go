@@ -80,7 +80,6 @@ func NewClient(cfg ClientConfig) (c *Client, sender string, err error) {
 
 	interfaceRegistry := codecTypes.NewInterfaceRegistry()
 	std.RegisterInterfaces(interfaceRegistry)
-
 	authtypes.RegisterInterfaces(interfaceRegistry)
 	authztypes.RegisterInterfaces(interfaceRegistry)
 	vestingtypes.RegisterInterfaces(interfaceRegistry)
@@ -95,9 +94,9 @@ func NewClient(cfg ClientConfig) (c *Client, sender string, err error) {
 	feegranttypes.RegisterInterfaces(interfaceRegistry)
 
 	clientCtx := client.Context{
-		ChainID:       "atlantic-2",
+		ChainID:       cfg.ChainID,
 		BroadcastMode: flags.BroadcastAsync,
-		TxConfig: NewTxConfig([]signing.SignMode{
+		TxConfig: newTxConfig([]signing.SignMode{
 			signing.SignMode_SIGN_MODE_DIRECT,
 		}),
 	}.WithKeyring(cosmosKeyring).WithFromAddress(senderInfo.GetAddress()).
@@ -105,7 +104,7 @@ func NewClient(cfg ClientConfig) (c *Client, sender string, err error) {
 		WithNodeURI(cfg.NodeURI).WithAccountRetriever(authtypes.AccountRetriever{}).WithClient(tmClient).
 		WithInterfaceRegistry(interfaceRegistry)
 
-	txFactory := NewTxFactory(clientCtx)
+	txFactory := newTxFactory(clientCtx)
 	txFactory = txFactory.WithGasPrices(DefaultGasPriceWithDenom)
 
 	conn, err := grpc.NewClient(cfg.RPCAddress, grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(nil, "")))

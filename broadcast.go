@@ -41,8 +41,8 @@ func (c *Client) AsyncBroadcastMsg(msgs ...sdk.Msg) (*txtypes.BroadcastTxRespons
 	return res, nil
 }
 
-func (c *Client) broadcastTx(ctx context.Context, txf tx.Factory, msgs ...sdk.Msg) (*txtypes.BroadcastTxResponse, error) {
-	txf, err := c.prepareFactory(c.ctx, txf)
+func (c *Client) broadcastTx(ctx context.Context, txf tx.Factory, msgs ...sdk.Msg) (resp *txtypes.BroadcastTxResponse, err error) {
+	txf, err = c.prepareFactory(c.ctx, txf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepareFactory: %s", err)
 	}
@@ -51,6 +51,7 @@ func (c *Client) broadcastTx(ctx context.Context, txf tx.Factory, msgs ...sdk.Ms
 	if err != nil {
 		return nil, fmt.Errorf("failed to BuildSimTx: %s", err)
 	}
+
 	simRes, err := c.txClient.Simulate(ctx, &txtypes.SimulateRequest{TxBytes: simTxBytes})
 	if err != nil {
 		return nil, fmt.Errorf("failed to CalculateGas: %s", err)
@@ -67,31 +68,33 @@ func (c *Client) broadcastTx(ctx context.Context, txf tx.Factory, msgs ...sdk.Ms
 	txn.SetFeeGranter(c.ctx.GetFeeGranterAddress())
 	err = tx.Sign(txf, c.ctx.GetFromName(), txn, true)
 	if err != nil {
-		return nil, fmt.Errorf("failed to Sign Tx: %s", err)
+		return nil, fmt.Errorf("tx.Sign: %s", err)
 	}
 
 	txBytes, err := c.ctx.TxConfig.TxEncoder()(txn.GetTx())
 	if err != nil {
-		return nil, fmt.Errorf("failed TxEncoder to encode Tx: %s", err)
+		return nil, fmt.Errorf("c.ctx.TxConfig.TxEncoder: %s", err)
 	}
 
 	req := txtypes.BroadcastTxRequest{
 		TxBytes: txBytes,
 		Mode:    txtypes.BroadcastMode_BROADCAST_MODE_SYNC,
 	}
-	// use our own client to broadcast tx
-	res, err := c.txClient.BroadcastTx(ctx, &req)
+
+	resp, err = c.txClient.BroadcastTx(ctx, &req)
 	if err != nil {
-		return res, err
-	}
-	if res.GetTxResponse() == nil {
-		return res, fmt.Errorf("empty response: %+v", res)
-	}
-	if res.GetTxResponse().RawLog != "" {
-		return res, fmt.Errorf("non empty log: %s", res.GetTxResponse().RawLog)
+		return resp, err
 	}
 
-	return res, nil
+	if resp.GetTxResponse() == nil {
+		return resp, fmt.Errorf("empty response: %+v", resp)
+	}
+
+	if resp.GetTxResponse().RawLog != "" {
+		return resp, fmt.Errorf("non empty log: %s", resp.GetTxResponse().RawLog)
+	}
+
+	return resp, nil
 }
 
 func (*Client) prepareFactory(clientCtx client.Context, txf tx.Factory) (tx.Factory, error) {
