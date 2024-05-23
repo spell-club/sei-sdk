@@ -13,7 +13,12 @@ import (
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 )
 
-func (c *Client) AsyncBroadcastMsg(msgs ...sdk.Msg) (*txtypes.BroadcastTxResponse, error) {
+const (
+	defaultTimeoutHeight             = 20
+	defaultTimeoutHeightSyncInterval = 10 * time.Second
+)
+
+func (c *Transactor) asyncBroadcastMsg(msgs ...sdk.Msg) (*txtypes.BroadcastTxResponse, error) {
 	ctx := context.Background()
 	c.syncMux.Lock()
 	defer c.syncMux.Unlock()
@@ -41,7 +46,7 @@ func (c *Client) AsyncBroadcastMsg(msgs ...sdk.Msg) (*txtypes.BroadcastTxRespons
 	return res, nil
 }
 
-func (c *Client) broadcastTx(ctx context.Context, txf tx.Factory, msgs ...sdk.Msg) (resp *txtypes.BroadcastTxResponse, err error) {
+func (c *Transactor) broadcastTx(ctx context.Context, txf tx.Factory, msgs ...sdk.Msg) (resp *txtypes.BroadcastTxResponse, err error) {
 	txf, err = c.prepareFactory(c.ctx, txf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepareFactory: %s", err)
@@ -97,7 +102,7 @@ func (c *Client) broadcastTx(ctx context.Context, txf tx.Factory, msgs ...sdk.Ms
 	return resp, nil
 }
 
-func (*Client) prepareFactory(clientCtx client.Context, txf tx.Factory) (tx.Factory, error) {
+func (*Transactor) prepareFactory(clientCtx client.Context, txf tx.Factory) (tx.Factory, error) {
 	from := clientCtx.GetFromAddress()
 
 	if err := txf.AccountRetriever().EnsureExists(clientCtx, from); err != nil {
@@ -123,14 +128,14 @@ func (*Client) prepareFactory(clientCtx client.Context, txf tx.Factory) (tx.Fact
 	return txf, nil
 }
 
-func (c *Client) getAccSeq() uint64 {
+func (c *Transactor) getAccSeq() uint64 {
 	defer func() {
 		c.accSeq++
 	}()
 	return c.accSeq
 }
 
-func (c *Client) syncNonce() {
+func (c *Transactor) syncNonce() {
 	num, seq, err := c.txFactory.AccountRetriever().GetAccountNumberSequence(c.ctx, c.ctx.GetFromAddress())
 	if err != nil {
 		return
@@ -139,25 +144,4 @@ func (c *Client) syncNonce() {
 	}
 
 	c.accSeq = seq
-}
-
-func (c *Client) syncTimeoutHeight() {
-	t := time.NewTicker(defaultTimeoutHeightSyncInterval)
-	defer t.Stop()
-
-	for {
-		block, err := c.ctx.Client.Block(c.cancelCtx, nil)
-		if err != nil {
-			continue
-		}
-
-		c.txFactory.WithTimeoutHeight(uint64(block.Block.Height) + defaultTimeoutHeight)
-
-		select {
-		case <-c.cancelCtx.Done():
-			return
-		case <-t.C:
-			continue
-		}
-	}
 }
