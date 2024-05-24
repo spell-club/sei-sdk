@@ -1,8 +1,6 @@
 package sei_sdk
 
 import (
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -14,23 +12,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 
-	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	txf "github.com/cosmos/cosmos-sdk/client/tx"
-	cosmostypes "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
-type Transactor struct {
-	ctx       client.Context
-	txFactory txf.Factory
-	canSign   bool
-	accNum    uint64
-	accSeq    uint64
-
-	*Client
-}
-
-func (c *Client) NewTransactor(keyringUID, key string) *Transactor {
+func (c *Client) AddSigner(keyringUID, key string) {
 	tmClient, err := client.NewClientFromNode(c.nodeURI)
 	if err != nil {
 
@@ -67,30 +53,31 @@ func (c *Client) NewTransactor(keyringUID, key string) *Transactor {
 		WithSignMode(signing.SignMode_SIGN_MODE_DIRECT).
 		WithGasPrices(DefaultGasPriceWithDenom)
 
-	transactor := &Transactor{
-		ctx:       clientCtx,
-		txFactory: txFactory,
-		canSign:   clientCtx.Keyring != nil,
+	c.txFactory = txFactory
 
-		Client: c,
+	sgn := &signer{
+		ctx:     clientCtx,
+		canSign: clientCtx.Keyring != nil,
 	}
 
-	transactor.accNum, transactor.accSeq, err = txFactory.AccountRetriever().GetAccountNumberSequence(clientCtx, clientCtx.GetFromAddress())
+	sgn.accNum, sgn.accSeq, err = txFactory.AccountRetriever().GetAccountNumberSequence(clientCtx, clientCtx.GetFromAddress())
 	if err != nil {
 
 	}
 
-	go func(tx *Transactor) {
+	c.txFactory = txFactory
+
+	go func(cl *Client) {
 		t := time.NewTicker(defaultTimeoutHeightSyncInterval)
 		defer t.Stop()
 
 		for {
-			block, err := tx.ctx.Client.Block(c.cancelCtx, nil)
+			block, err := c.s.ctx.Client.Block(c.cancelCtx, nil)
 			if err != nil {
 				continue
 			}
 
-			tx.txFactory.WithTimeoutHeight(uint64(block.Block.Height) + defaultTimeoutHeight)
+			c.txFactory.WithTimeoutHeight(uint64(block.Block.Height) + defaultTimeoutHeight)
 
 			select {
 			case <-c.cancelCtx.Done():
@@ -99,32 +86,5 @@ func (c *Client) NewTransactor(keyringUID, key string) *Transactor {
 				continue
 			}
 		}
-	}(transactor)
-
-	return transactor
-}
-
-func (c *Transactor) SendTx(sender, contract string, msgs []string) (string, error) {
-	if len(msgs) == 0 {
-		return "", errors.New("message is empty")
-	}
-	if len(msgs) > 100 {
-		return "", errors.New("too many messages")
-	}
-
-	result, err := c.asyncBroadcastMsg(Map(msgs, func(d string) cosmostypes.Msg {
-		return &wasmtypes.MsgExecuteContract{
-			Sender:   sender,
-			Contract: contract,
-			Msg:      []byte(d),
-		}
-	})...)
-	if err != nil {
-		return "", fmt.Errorf("AsyncBroadcastMsg: %s", err)
-	}
-	if result == nil || result.GetTxResponse() == nil {
-		return "", fmt.Errorf("result is nil: %v", result)
-	}
-
-	return result.GetTxResponse().TxHash, nil
+	}(c)
 }

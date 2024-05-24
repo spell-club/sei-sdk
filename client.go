@@ -9,6 +9,8 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	"github.com/cosmos/cosmos-sdk/client"
+	txf "github.com/cosmos/cosmos-sdk/client/tx"
 	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
 	std "github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -32,10 +34,13 @@ const (
 )
 
 type Client struct {
-	conn            *grpc.ClientConn
-	syncMux         *sync.Mutex
-	cancelCtx       context.Context
-	cancelFn        func()
+	conn      *grpc.ClientConn
+	syncMux   *sync.Mutex
+	cancelCtx context.Context
+	cancelFn  func()
+
+	s               signer
+	txFactory       txf.Factory
 	txClient        txtypes.ServiceClient
 	wasmQueryClient wasmtypes.QueryClient
 
@@ -43,6 +48,13 @@ type Client struct {
 
 	nodeURI string
 	chainID string
+}
+
+type signer struct {
+	ctx     client.Context
+	canSign bool
+	accNum  uint64
+	accSeq  uint64
 }
 
 func NewClient(cfg ClientConfig) (c *Client, err error) {
