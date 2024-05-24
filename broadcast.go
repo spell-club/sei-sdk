@@ -74,15 +74,25 @@ func (c *Client) asyncBroadcastMsg(msgs ...sdk.Msg) (*txtypes.BroadcastTxRespons
 
 	res, err := c.broadcastTx(ctx, c.txFactory, msgs...)
 	if err != nil {
-		if strings.Contains(err.Error(), "account sequence mismatch") {
-			c.syncNonce()
+		for range 5 {
+			if err == nil {
+				break
+			}
 
-			sequence = c.getAccSeq()
-			c.txFactory = c.txFactory.WithSequence(sequence)
-			c.txFactory = c.txFactory.WithAccountNumber(c.accNum)
+			if strings.Contains(err.Error(), "account sequence mismatch") {
+				c.syncNonce()
+				sequence = c.getAccSeq()
 
-			res, err = c.broadcastTx(ctx, c.txFactory, msgs...)
+				c.txFactory = c.txFactory.WithSequence(sequence)
+				c.txFactory = c.txFactory.WithAccountNumber(c.accNum)
+
+				res, err = c.broadcastTx(ctx, c.txFactory, msgs...)
+				continue
+			}
+
+			break
 		}
+
 		if err != nil {
 			return nil, err
 		}
