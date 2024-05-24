@@ -55,24 +55,26 @@ func (c *Client) AddSigner(keyringUID, key string) {
 
 	c.txFactory = txFactory
 
-	sgn := &signer{
+	sgn := &sign{
 		ctx:     clientCtx,
 		canSign: clientCtx.Keyring != nil,
+		sender:  senderInfo.GetName(),
 	}
 
-	sgn.accNum, sgn.accSeq, err = txFactory.AccountRetriever().GetAccountNumberSequence(clientCtx, clientCtx.GetFromAddress())
+	c.accNum, c.accSeq, err = txFactory.AccountRetriever().GetAccountNumberSequence(clientCtx, clientCtx.GetFromAddress())
 	if err != nil {
 
 	}
 
 	c.txFactory = txFactory
+	c.sign = sgn
 
 	go func(cl *Client) {
 		t := time.NewTicker(defaultTimeoutHeightSyncInterval)
 		defer t.Stop()
 
 		for {
-			block, err := c.s.ctx.Client.Block(c.cancelCtx, nil)
+			block, err := c.sign.ctx.Client.Block(c.cancelCtx, nil)
 			if err != nil {
 				continue
 			}

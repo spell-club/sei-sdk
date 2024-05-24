@@ -20,7 +20,7 @@ const (
 	defaultTimeoutHeightSyncInterval = 10 * time.Second
 )
 
-func (c *Client) SendTx(sender, contract string, msgs []string) (string, error) {
+func (c *Client) SendTx(msgs []string) (string, error) {
 	if len(msgs) == 0 {
 		return "", errors.New("message is empty")
 	}
@@ -30,8 +30,8 @@ func (c *Client) SendTx(sender, contract string, msgs []string) (string, error) 
 
 	result, err := c.asyncBroadcastMsg(Map(msgs, func(d string) cosmostypes.Msg {
 		return &wasmtypes.MsgExecuteContract{
-			Sender:   sender,
-			Contract: contract,
+			Sender:   c.sign.sender,
+			Contract: c.contract,
 			Msg:      []byte(d),
 		}
 	})...)
@@ -52,7 +52,7 @@ func (c *Client) asyncBroadcastMsg(msgs ...sdk.Msg) (*txtypes.BroadcastTxRespons
 
 	sequence := c.getAccSeq()
 	c.txFactory = c.txFactory.WithSequence(sequence)
-	c.txFactory = c.txFactory.WithAccountNumber(c.s.accNum)
+	c.txFactory = c.txFactory.WithAccountNumber(c.accNum)
 
 	res, err := c.broadcastTx(ctx, c.txFactory, msgs...)
 	if err != nil {
@@ -61,7 +61,7 @@ func (c *Client) asyncBroadcastMsg(msgs ...sdk.Msg) (*txtypes.BroadcastTxRespons
 
 			sequence = c.getAccSeq()
 			c.txFactory = c.txFactory.WithSequence(sequence)
-			c.txFactory = c.txFactory.WithAccountNumber(c.s.accNum)
+			c.txFactory = c.txFactory.WithAccountNumber(c.accNum)
 
 			res, err = c.broadcastTx(ctx, c.txFactory, msgs...)
 		}
@@ -74,7 +74,7 @@ func (c *Client) asyncBroadcastMsg(msgs ...sdk.Msg) (*txtypes.BroadcastTxRespons
 }
 
 func (c *Client) broadcastTx(ctx context.Context, txf tx.Factory, msgs ...sdk.Msg) (resp *txtypes.BroadcastTxResponse, err error) {
-	txf, err = c.prepareFactory(c.s.ctx, txf)
+	txf, err = c.prepareFactory(c.sign.ctx, txf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepareFactory: %s", err)
 	}
@@ -97,13 +97,13 @@ func (c *Client) broadcastTx(ctx context.Context, txf tx.Factory, msgs ...sdk.Ms
 		return nil, fmt.Errorf("BuildUnsignedTx: %s", err)
 	}
 
-	txn.SetFeeGranter(c.s.ctx.GetFeeGranterAddress())
-	err = tx.Sign(txf, c.s.ctx.GetFromName(), txn, true)
+	txn.SetFeeGranter(c.sign.ctx.GetFeeGranterAddress())
+	err = tx.Sign(txf, c.sign.ctx.GetFromName(), txn, true)
 	if err != nil {
 		return nil, fmt.Errorf("tx.Sign: %s", err)
 	}
 
-	txBytes, err := c.s.ctx.TxConfig.TxEncoder()(txn.GetTx())
+	txBytes, err := c.sign.ctx.TxConfig.TxEncoder()(txn.GetTx())
 	if err != nil {
 		return nil, fmt.Errorf("c.ctx.TxConfig.TxEncoder: %s", err)
 	}
@@ -157,18 +157,18 @@ func (*Client) prepareFactory(clientCtx client.Context, txf tx.Factory) (tx.Fact
 
 func (c *Client) getAccSeq() uint64 {
 	defer func() {
-		c.s.accSeq++
+		c.accSeq++
 	}()
-	return c.s.accSeq
+	return c.accSeq
 }
 
 func (c *Client) syncNonce() {
-	num, seq, err := c.txFactory.AccountRetriever().GetAccountNumberSequence(c.s.ctx, c.s.ctx.GetFromAddress())
+	num, seq, err := c.txFactory.AccountRetriever().GetAccountNumberSequence(c.sign.ctx, c.sign.ctx.GetFromAddress())
 	if err != nil {
 		return
-	} else if num != c.s.accNum {
+	} else if num != c.accNum {
 		return
 	}
 
-	c.s.accSeq = seq
+	c.accSeq = seq
 }

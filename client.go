@@ -34,30 +34,40 @@ const (
 )
 
 type Client struct {
+	// Sign for transactions
+	sign *sign
+
+	// Conn and sync services
 	conn      *grpc.ClientConn
 	syncMux   *sync.Mutex
 	cancelCtx context.Context
 	cancelFn  func()
 
-	s               signer
+	// Execution clients
 	txFactory       txf.Factory
 	txClient        txtypes.ServiceClient
 	wasmQueryClient wasmtypes.QueryClient
 
-	interfaceRegistry codecTypes.InterfaceRegistry
+	// Accounts counter
+	accNum uint64
+	accSeq uint64
 
-	nodeURI string
-	chainID string
+	// Some config data
+	nodeURI  string
+	chainID  string
+	contract string
+
+	// Interfaces that we will reuse in AddSign
+	interfaceRegistry codecTypes.InterfaceRegistry
 }
 
-type signer struct {
+type sign struct {
 	ctx     client.Context
 	canSign bool
-	accNum  uint64
-	accSeq  uint64
+	sender  string
 }
 
-func NewClient(cfg ClientConfig) (c *Client, err error) {
+func NewClient(cfg Config) (c *Client, err error) {
 	config := sdk.GetConfig()
 	config.SetBech32PrefixForAccount("sei", "seipub")
 	config.Seal()
