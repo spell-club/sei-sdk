@@ -13,6 +13,7 @@ replace (
 require (
 	github.com/CosmWasm/wasmd v0.0.0-00010101000000-000000000000
 	github.com/cosmos/cosmos-sdk v0.45.4
+	github.com/rs/zerolog v1.30.0
 	google.golang.org/grpc v1.64.0
 	gotest.tools v2.2.0+incompatible
 )
@@ -94,7 +95,6 @@ require (
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/rakyll/statik v0.1.7 // indirect
 	github.com/regen-network/cosmos-proto v0.3.1 // indirect
-	github.com/rs/zerolog v1.30.0 // indirect
 	github.com/sasha-s/go-deadlock v0.3.1 // indirect
 	github.com/sei-protocol/sei-db v0.0.27-0.20240123064153-d6dfa112e760 // indirect
 	github.com/sei-protocol/sei-tm-db v0.0.5 // indirect
