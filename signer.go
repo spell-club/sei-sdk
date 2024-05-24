@@ -11,23 +11,25 @@ import (
 	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
+	"github.com/rs/zerolog/log"
 
 	txf "github.com/cosmos/cosmos-sdk/client/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
-func (c *Client) AddSigner(keyringUID, key string) {
-	tmClient, err := client.NewClientFromNode(c.nodeURI)
+// AddSigner TODO: one template for all signers
+func (c *Client) AddSigner(name, mnemonic string) {
+	tmClient, err := client.NewClientFromNode(c.rpcHost)
 	if err != nil {
-
+		log.Printf("NewClientFromNode error: %s", err)
 	}
 
 	cosmosKeyring := keyring.NewInMemory()
 	path := hd.CreateHDPath(118, 0, 0).String()
 
-	senderInfo, err := cosmosKeyring.NewAccount(keyringUID, key, "", path, hd.Secp256k1)
+	senderInfo, err := cosmosKeyring.NewAccount(name, mnemonic, "", path, hd.Secp256k1)
 	if err != nil {
-
+		log.Printf("cosmosKeyring.NewAccount error: %s", err)
 	}
 
 	std.RegisterInterfaces(c.interfaceRegistry)
@@ -40,7 +42,7 @@ func (c *Client) AddSigner(keyringUID, key string) {
 		TxConfig:      txConfig,
 	}.WithKeyring(cosmosKeyring).WithFromAddress(senderInfo.GetAddress()).
 		WithFromName(senderInfo.GetName()).WithFrom(senderInfo.GetName()).
-		WithNodeURI(c.nodeURI).WithAccountRetriever(authtypes.AccountRetriever{}).WithClient(tmClient).
+		WithAccountRetriever(authtypes.AccountRetriever{}).WithClient(tmClient).
 		WithInterfaceRegistry(c.interfaceRegistry)
 
 	txFactory := new(txf.Factory).
@@ -58,15 +60,14 @@ func (c *Client) AddSigner(keyringUID, key string) {
 	sgn := &sign{
 		ctx:     clientCtx,
 		canSign: clientCtx.Keyring != nil,
-		sender:  senderInfo.GetName(),
+		sender:  senderInfo.GetAddress().String(),
 	}
 
 	c.accNum, c.accSeq, err = txFactory.AccountRetriever().GetAccountNumberSequence(clientCtx, clientCtx.GetFromAddress())
 	if err != nil {
-
+		log.Printf("GetAccountNumberSequence error: %s", err)
 	}
 
-	c.txFactory = txFactory
 	c.sign = sgn
 
 	go func(cl *Client) {

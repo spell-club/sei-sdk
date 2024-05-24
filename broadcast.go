@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -28,6 +29,8 @@ func (c *Client) SendTx(msgs []string) (string, error) {
 		return "", errors.New("too many messages")
 	}
 
+	log.Printf("sender:%s ", c.sign.sender)
+
 	result, err := c.asyncBroadcastMsg(Map(msgs, func(d string) cosmostypes.Msg {
 		return &wasmtypes.MsgExecuteContract{
 			Sender:   c.sign.sender,
@@ -46,6 +49,8 @@ func (c *Client) SendTx(msgs []string) (string, error) {
 }
 
 func (c *Client) asyncBroadcastMsg(msgs ...sdk.Msg) (*txtypes.BroadcastTxResponse, error) {
+	log.Printf("starting async broadcast")
+
 	ctx := context.Background()
 	c.syncMux.Lock()
 	defer c.syncMux.Unlock()
@@ -76,21 +81,21 @@ func (c *Client) asyncBroadcastMsg(msgs ...sdk.Msg) (*txtypes.BroadcastTxRespons
 func (c *Client) broadcastTx(ctx context.Context, txf tx.Factory, msgs ...sdk.Msg) (resp *txtypes.BroadcastTxResponse, err error) {
 	txf, err = c.prepareFactory(c.sign.ctx, txf)
 	if err != nil {
-		return nil, fmt.Errorf("failed to prepareFactory: %s", err)
+		return nil, fmt.Errorf("c.prepareFactory: %s", err)
 	}
 
 	simTxBytes, err := txf.BuildSimTx(msgs...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to BuildSimTx: %s", err)
+		return nil, fmt.Errorf("txf.BuildSimTx: %s", err)
 	}
 
 	simRes, err := c.txClient.Simulate(ctx, &txtypes.SimulateRequest{TxBytes: simTxBytes})
 	if err != nil {
-		return nil, fmt.Errorf("failed to CalculateGas: %s", err)
+		return nil, fmt.Errorf("c.txClient.Simulate: %s", err)
 	}
 
 	adjustedGas := uint64(txf.GasAdjustment() * float64(simRes.GasInfo.GetGasUsed()))
-	txf.WithGas(adjustedGas)
+	txf = txf.WithGas(adjustedGas)
 
 	txn, err := txf.BuildUnsignedTx(msgs...)
 	if err != nil {
@@ -115,15 +120,15 @@ func (c *Client) broadcastTx(ctx context.Context, txf tx.Factory, msgs ...sdk.Ms
 
 	resp, err = c.txClient.BroadcastTx(ctx, &req)
 	if err != nil {
-		return resp, err
+		return resp, fmt.Errorf("BroadcastTx: %s", err)
 	}
 
 	if resp.GetTxResponse() == nil {
-		return resp, fmt.Errorf("empty response: %+v", resp)
+		return resp, fmt.Errorf("resp.GetTxResponse(): %+v", resp)
 	}
 
 	if resp.GetTxResponse().RawLog != "" {
-		return resp, fmt.Errorf("non empty log: %s", resp.GetTxResponse().RawLog)
+		return resp, fmt.Errorf("resp.GetTxResponse().RawLog: %s", resp.GetTxResponse().RawLog)
 	}
 
 	return resp, nil

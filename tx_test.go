@@ -6,16 +6,19 @@ import (
 	"testing"
 
 	"gotest.tools/assert"
+
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 func TestClient_SendTx(t *testing.T) {
 	cfg := Config{
-		Network:    "testnet",
-		Contract:   "sei154p8wkvvgvkrm849ahnw9xwx6v4yj8c9wmfwc83x4u6shcmdyq9qavegg7",
-		TxMode:     "single",
-		ChainID:    "atlantic-2",
-		RPCAddress: "grpc.atlantic-2.seinetwork.io:443",
-		NodeURI:    "https://rpc.atlantic-2.seinetwork.io",
+		Network:  "testnet",
+		Contract: "sei154p8wkvvgvkrm849ahnw9xwx6v4yj8c9wmfwc83x4u6shcmdyq9qavegg7",
+		TxMode:   "single",
+		ChainID:  "atlantic-2",
+		GRPCHost: "grpc.atlantic-2.seinetwork.io:443",
+		RPCHost:  "https://rpc.atlantic-2.seinetwork.io",
 	}
 
 	client, err := NewClient(cfg)
@@ -28,7 +31,7 @@ func TestClient_SendTx(t *testing.T) {
 	}
 
 	var msg ClaimMsg
-	msg.Claim.Address = "x"
+	msg.Claim.Address = sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address()).String()
 
 	marshalledMsg, err := json.Marshal(msg)
 	if err != nil {

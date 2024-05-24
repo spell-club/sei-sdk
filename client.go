@@ -53,7 +53,7 @@ type Client struct {
 	accSeq uint64
 
 	// Some config data
-	nodeURI  string
+	rpcHost  string
 	chainID  string
 	contract string
 
@@ -87,9 +87,9 @@ func NewClient(cfg Config) (c *Client, err error) {
 	upgradetypes.RegisterInterfaces(interfaceRegistry)
 	feegranttypes.RegisterInterfaces(interfaceRegistry)
 
-	conn, err := grpc.NewClient(cfg.RPCAddress, grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(nil, "")))
+	conn, err := grpc.NewClient(cfg.GRPCHost, grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(nil, "")))
 	if err != nil {
-		return nil, fmt.Errorf("grpc.Dial: %s %s", cfg.RPCAddress, err)
+		return nil, fmt.Errorf("grpc.Dial: %s %s", cfg.GRPCHost, err)
 	}
 
 	cancelCtx, cancelFn := context.WithCancel(context.Background())
@@ -105,7 +105,7 @@ func NewClient(cfg Config) (c *Client, err error) {
 
 		interfaceRegistry: interfaceRegistry,
 
-		nodeURI:  cfg.NodeURI,
+		rpcHost:  cfg.RPCHost,
 		chainID:  cfg.ChainID,
 		contract: cfg.Contract,
 	}
