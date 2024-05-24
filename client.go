@@ -68,6 +68,10 @@ type sign struct {
 }
 
 func NewClient(cfg Config) (c *Client, err error) {
+	if cfg.Network != "testnet" && cfg.Network != "mainnet" {
+		return c, fmt.Errorf("invalid network: %s. Can be 'testnet' or 'mainnet'", cfg.Network)
+	}
+
 	config := sdk.GetConfig()
 	config.SetBech32PrefixForAccount("sei", "seipub")
 	config.Seal()
