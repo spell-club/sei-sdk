@@ -105,7 +105,9 @@ func NewClient(cfg Config) (c *Client, err error) {
 
 		interfaceRegistry: interfaceRegistry,
 
-		nodeURI: cfg.NodeURI,
+		nodeURI:  cfg.NodeURI,
+		chainID:  cfg.ChainID,
+		contract: cfg.Contract,
 	}
 
 	return c, nil

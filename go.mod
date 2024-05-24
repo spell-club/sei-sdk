@@ -14,6 +14,7 @@ require (
 	github.com/CosmWasm/wasmd v0.0.0-00010101000000-000000000000
 	github.com/cosmos/cosmos-sdk v0.45.4
 	google.golang.org/grpc v1.64.0
+	gotest.tools v2.2.0+incompatible
 )
 
 require (
@@ -58,6 +59,7 @@ require (
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/flatbuffers v1.12.1 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/handlers v1.5.1 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
