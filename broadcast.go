@@ -19,19 +19,18 @@ import (
 const (
 	defaultTimeoutHeight             = 20
 	defaultTimeoutHeightSyncInterval = 10 * time.Second
+	msgBatchLen                      = 50
 )
 
 func (c *Client) SendTx(msgs []string) (string, error) {
 	if len(msgs) == 0 {
 		return "", errors.New("message is empty")
 	}
-	if len(msgs) > 100 {
+	if len(msgs) > msgBatchLen {
 		return "", errors.New("too many messages")
 	}
 
-	log.Printf("sender:%s ", c.sign.sender)
-
-	result, err := c.asyncBroadcastMsg(Map(msgs, func(d string) cosmostypes.Msg {
+	txResult, err := c.asyncBroadcastMsg(Map(msgs, func(d string) cosmostypes.Msg {
 		return &wasmtypes.MsgExecuteContract{
 			Sender:   c.sign.sender,
 			Contract: c.contract,
@@ -39,13 +38,27 @@ func (c *Client) SendTx(msgs []string) (string, error) {
 		}
 	})...)
 	if err != nil {
+		if strings.Contains(err.Error(), "is greater than max gas") && len(msgs) > 2 {
+			var txHashR string
+
+			for _, chunk := range Chunk(msgs, len(msgs)/2+1) {
+				txHashR, err = c.SendTx(chunk)
+				if err != nil {
+					return "", fmt.Errorf("SendTx recursive call: %s", err)
+				}
+			}
+
+			return txHashR, nil
+		}
+
 		return "", fmt.Errorf("AsyncBroadcastMsg: %s", err)
 	}
-	if result == nil || result.GetTxResponse() == nil {
-		return "", fmt.Errorf("result is nil: %v", result)
+
+	if txResult == nil || txResult.GetTxResponse() == nil {
+		return "", fmt.Errorf("txResult is nil: %v", txResult)
 	}
 
-	return result.GetTxResponse().TxHash, nil
+	return txResult.GetTxResponse().TxHash, nil
 }
 
 func (c *Client) asyncBroadcastMsg(msgs ...sdk.Msg) (*txtypes.BroadcastTxResponse, error) {

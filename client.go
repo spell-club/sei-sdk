@@ -31,6 +31,8 @@ import (
 
 const (
 	DefaultGasPriceWithDenom = "0.1usei"
+	Bech32PrefixAccAddr      = "sei"
+	Bech32PrefixAccPub       = "seipub"
 )
 
 type Client struct {
@@ -73,7 +75,7 @@ func NewClient(cfg Config) (c *Client, err error) {
 	}
 
 	config := sdk.GetConfig()
-	config.SetBech32PrefixForAccount("sei", "seipub")
+	config.SetBech32PrefixForAccount(Bech32PrefixAccAddr, Bech32PrefixAccPub)
 	config.Seal()
 
 	interfaceRegistry := codecTypes.NewInterfaceRegistry()
