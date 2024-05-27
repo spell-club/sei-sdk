@@ -1,14 +1,14 @@
-package seisdk
+package sdk
 
 import (
 	"errors"
 	"fmt"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkt "github.com/cosmos/cosmos-sdk/types"
 )
 
-func (c *Client) Instantiate(codeID uint64, label, instantiateMsg string, funds []sdk.Coin) (string, error) {
+func (c *Client) Instantiate(codeID uint64, label, instantiateMsg string, funds []sdkt.Coin) (string, error) {
 	if instantiateMsg == "" {
 		return "", errors.New("message code is empty")
 	}

@@ -1,4 +1,4 @@
-package seisdk
+package sdk
 
 import (
 	"fmt"

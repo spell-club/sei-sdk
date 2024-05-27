@@ -1,4 +1,4 @@
-module github.com/spell-club/seisdk
+module github.com/spell-club/sdk
 
 go 1.22
 
