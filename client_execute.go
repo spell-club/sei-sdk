@@ -24,6 +24,7 @@ func (c *Client) Execute(contractAddress string, msgs []string) (string, error) 
 		return "", errors.New("too many messages")
 	}
 
+	c.logger.Debugf("Execute: num msgs %d", len(msgs))
 	txResult, err := c.asyncBroadcastMsg(Map(msgs, func(d string) sdktypes.Msg {
 		return &wasmtypes.MsgExecuteContract{
 			Sender:   c.sign.sender,
@@ -40,6 +41,8 @@ func (c *Client) Execute(contractAddress string, msgs []string) (string, error) 
 				if err != nil {
 					return "", fmt.Errorf("Execute recursive call: %s", err)
 				}
+
+				c.logger.Debugf("Execute recursive call: sent %d msgs; txID %s", len(chunk), txHashR)
 			}
 
 			return txHashR, nil
