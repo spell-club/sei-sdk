@@ -79,6 +79,6 @@ func (c *Client) FetchPinnedCodes(ctx context.Context, pagination *query.PageReq
 	return c.wasmQueryClient.PinnedCodes(ctx, req)
 }
 
-func (c *Client) GetSignerName() string {
+func (c *Client) GetSignerAddress() string {
 	return c.sign.sender
 }
