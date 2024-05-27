@@ -1,6 +1,6 @@
 package seisdk
 
-func (c *Client) Instantiate(msgs []string) (string, error) {
+func (c *Client) Instantiate(address, code string) (string, error) {
 
 	return "", nil
 }

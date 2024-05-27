@@ -74,10 +74,6 @@ type sign struct {
 }
 
 func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) {
-	if cfg.Network != "testnet" && cfg.Network != "mainnet" {
-		return c, fmt.Errorf("invalid network: %s. Can be 'testnet' or 'mainnet'", cfg.Network)
-	}
-
 	err = cfg.Validate()
 	if err != nil {
 		return nil, err
