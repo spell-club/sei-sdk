@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -13,11 +14,17 @@ import (
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	txf "github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/cosmos/cosmos-sdk/codec"
 	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/crypto/hd"
+	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	authztypes "github.com/cosmos/cosmos-sdk/x/authz"
@@ -59,9 +66,8 @@ type Client struct { //nolint:govet
 	accSeq uint64
 
 	// Some config data
-	rpcHost  string
-	chainID  string
-	contract string
+	rpcHost string
+	chainID string
 
 	// Interfaces that we will reuse in AddSign
 	interfaceRegistry codecTypes.InterfaceRegistry
@@ -108,8 +114,49 @@ func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) { //noli
 		return nil, fmt.Errorf("grpc.Dial: %s %s", cfg.GRPCHost, err)
 	}
 
-	cancelCtx, cancelFn := context.WithCancel(context.Background())
+	cosmosKeyring := keyring.NewInMemory()
+	path := hd.CreateHDPath(118, 0, 0).String()
 
+	senderInfo, err := cosmosKeyring.NewAccount(cfg.SignerName, cfg.SignerMnemonic, "", path, hd.Secp256k1)
+	if err != nil {
+		return nil, fmt.Errorf("cosmosKeyring.NewAccount error: %w", err)
+	}
+
+	marshaller := codec.NewProtoCodec(c.interfaceRegistry)
+	txConfig := tx.NewTxConfig(marshaller, []signing.SignMode{signing.SignMode_SIGN_MODE_DIRECT})
+
+	clientCtx := client.Context{
+		ChainID:       c.chainID,
+		BroadcastMode: flags.BroadcastAsync,
+		TxConfig:      txConfig,
+	}.WithKeyring(cosmosKeyring).WithFromAddress(senderInfo.GetAddress()).
+		WithFromName(senderInfo.GetName()).WithFrom(senderInfo.GetName()).
+		WithAccountRetriever(authtypes.AccountRetriever{}).WithClient(c.tmClient).
+		WithInterfaceRegistry(c.interfaceRegistry)
+
+	txFactory := new(txf.Factory).
+		WithKeybase(clientCtx.Keyring).
+		WithTxConfig(clientCtx.TxConfig).
+		WithAccountRetriever(clientCtx.AccountRetriever).
+		WithSimulateAndExecute(true).
+		WithGasAdjustment(1.1).
+		WithChainID(clientCtx.ChainID).
+		WithSignMode(signing.SignMode_SIGN_MODE_DIRECT).
+		WithGasPrices(DefaultGasPriceWithDenom)
+
+	c.txFactory = txFactory
+
+	sgn := &sign{
+		ctx:    clientCtx,
+		sender: senderInfo.GetAddress().String(),
+	}
+
+	accNum, accSeq, err := txFactory.AccountRetriever().GetAccountNumberSequence(clientCtx, clientCtx.GetFromAddress())
+	if err != nil {
+		return nil, fmt.Errorf("GetAccountNumberSequence error: %w", err)
+	}
+
+	cancelCtx, cancelFn := context.WithCancel(context.Background())
 	c = &Client{
 		conn:      conn,
 		syncMux:   new(sync.Mutex),
@@ -120,13 +167,39 @@ func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) { //noli
 		wasmQueryClient: wasmtypes.NewQueryClient(conn),
 		tmClient:        tmClient,
 
-		rpcHost:  cfg.RPCHost,
-		chainID:  cfg.ChainID,
-		contract: cfg.Contract,
+		rpcHost: cfg.RPCHost,
+		chainID: cfg.ChainID,
 
 		interfaceRegistry: interfaceRegistry,
 		logger:            logger,
+		accNum:            accNum,
+		accSeq:            accSeq,
+		txFactory:         txFactory,
+		sign:              sgn,
 	}
+
+	go func() {
+		t := time.NewTicker(defaultTimeoutHeightSyncInterval)
+		defer t.Stop()
+
+		for {
+			block, err := clientCtx.Client.Block(c.cancelCtx, nil)
+			if err != nil {
+				c.logger.Errorf("failed to get current block: %s", err)
+
+				continue
+			}
+
+			c.txFactory.WithTimeoutHeight(uint64(block.Block.Height) + defaultTimeoutHeight)
+
+			select {
+			case <-c.cancelCtx.Done():
+				return
+			case <-t.C:
+				continue
+			}
+		}
+	}()
 
 	return c, nil
 }

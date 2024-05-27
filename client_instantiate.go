@@ -5,16 +5,29 @@ import (
 	"fmt"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func (c *Client) Instantiate(address, code string) (string, error) {
-	if code == "" {
+func (c *Client) Instantiate(codeID uint64, label, instantiateMsg string, funds []sdk.Coin) (string, error) {
+	if instantiateMsg == "" {
 		return "", errors.New("message code is empty")
 	}
 
+	if label == "" {
+		return "", errors.New("label is empty")
+	}
+
+	if len(funds) == 0 {
+		return "", errors.New("funds are empty")
+	}
+
 	message := &wasmtypes.MsgInstantiateContract{
-		Sender: address,
-		Msg:    []byte(code),
+		Sender: c.sign.sender,
+		Admin:  c.sign.sender,
+		Label:  label,
+		CodeID: codeID,
+		Msg:    []byte(instantiateMsg),
+		Funds:  funds,
 	}
 
 	txResult, err := c.asyncBroadcastMsg(message)

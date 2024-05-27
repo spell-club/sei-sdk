@@ -16,7 +16,7 @@ const (
 	msgBatchLen                      = 50
 )
 
-func (c *Client) Execute(address string, msgs []string) (string, error) {
+func (c *Client) Execute(contractAddress string, msgs []string) (string, error) {
 	if len(msgs) == 0 {
 		return "", errors.New("message is empty")
 	}
@@ -26,8 +26,8 @@ func (c *Client) Execute(address string, msgs []string) (string, error) {
 
 	txResult, err := c.asyncBroadcastMsg(Map(msgs, func(d string) sdk.Msg {
 		return &wasmtypes.MsgExecuteContract{
-			Sender:   address,
-			Contract: c.contract,
+			Sender:   c.sign.sender,
+			Contract: contractAddress,
 			Msg:      []byte(d),
 		}
 	})...)
@@ -36,7 +36,7 @@ func (c *Client) Execute(address string, msgs []string) (string, error) {
 			var txHashR string
 
 			for _, chunk := range Chunk(msgs, len(msgs)/2+1) {
-				txHashR, err = c.Execute(address, chunk)
+				txHashR, err = c.Execute(contractAddress, chunk)
 				if err != nil {
 					return "", fmt.Errorf("Execute recursive call: %s", err)
 				}

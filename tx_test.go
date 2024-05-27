@@ -14,7 +14,6 @@ import (
 func TestClient_SendTx(t *testing.T) {
 	cfg := Config{
 		Network:  "testnet",
-		Contract: "sei154p8wkvvgvkrm849ahnw9xwx6v4yj8c9wmfwc83x4u6shcmdyq9qavegg7",
 		TxMode:   "single",
 		ChainID:  "atlantic-2",
 		GRPCHost: "grpc.atlantic-2.seinetwork.io:443",
@@ -42,7 +41,7 @@ func TestClient_SendTx(t *testing.T) {
 
 	client.AddSigner("user", "hurt monster burger grocery drill afraid muffin rubber grid fuel clinic fuel")
 
-	hash, err := client.Execute("", []string{string(marshalledMsg)})
+	hash, err := client.Execute("sei154p8wkvvgvkrm849ahnw9xwx6v4yj8c9wmfwc83x4u6shcmdyq9qavegg7", []string{string(marshalledMsg)})
 	assert.NilError(t, err)
 
 	log.Printf("\nhash: %s", hash)
