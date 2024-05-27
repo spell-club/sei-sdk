@@ -17,17 +17,16 @@ func (c *Client) Instantiate(codeID uint64, label, instantiateMsg string, funds 
 		return "", errors.New("label is empty")
 	}
 
-	if len(funds) == 0 {
-		return "", errors.New("funds are empty")
-	}
-
 	message := &wasmtypes.MsgInstantiateContract{
 		Sender: c.sign.sender,
 		Admin:  c.sign.sender,
 		Label:  label,
 		CodeID: codeID,
 		Msg:    []byte(instantiateMsg),
-		Funds:  funds,
+	}
+
+	if len(funds) != 0 {
+		message.Funds = funds
 	}
 
 	txResult, err := c.asyncBroadcastMsg(message)
