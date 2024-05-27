@@ -9,7 +9,7 @@ import (
 
 func (c *Client) Instantiate(address string, code string) (string, error) {
 	if code == "" {
-		return "", errors.New("message is empty")
+		return "", errors.New("message code is empty")
 	}
 
 	message := &wasmtypes.MsgInstantiateContract{
