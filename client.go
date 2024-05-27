@@ -97,16 +97,6 @@ func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) { //noli
 	upgradetypes.RegisterInterfaces(interfaceRegistry)
 	feegranttypes.RegisterInterfaces(interfaceRegistry)
 
-	tmClient, err := client.NewClientFromNode(cfg.RPCHost)
-	if err != nil {
-		return nil, fmt.Errorf("NewClientFromNode error: %w", err)
-	}
-
-	conn, err := grpc.NewClient(cfg.GRPCHost, grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(nil, "")))
-	if err != nil {
-		return nil, fmt.Errorf("grpc.Dial: %s %s", cfg.GRPCHost, err)
-	}
-
 	cosmosKeyring := keyring.NewInMemory()
 	path := hd.CreateHDPath(118, 0, 0).String()
 
@@ -118,8 +108,13 @@ func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) { //noli
 	marshaller := codec.NewProtoCodec(interfaceRegistry)
 	txConfig := tx.NewTxConfig(marshaller, []signing.SignMode{signing.SignMode_SIGN_MODE_DIRECT})
 
+	tmClient, err := client.NewClientFromNode(cfg.RPCHost)
+	if err != nil {
+		return nil, fmt.Errorf("NewClientFromNode error: %w", err)
+	}
+
 	clientCtx := client.Context{
-		ChainID:       cfg.ChainID,
+		ChainID:       cfg.chainID,
 		BroadcastMode: flags.BroadcastAsync,
 		TxConfig:      txConfig,
 	}.WithKeyring(cosmosKeyring).WithFromAddress(senderInfo.GetAddress()).
@@ -145,6 +140,11 @@ func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) { //noli
 	accNum, accSeq, err := txFactory.AccountRetriever().GetAccountNumberSequence(clientCtx, clientCtx.GetFromAddress())
 	if err != nil {
 		return nil, fmt.Errorf("GetAccountNumberSequence error: %w", err)
+	}
+
+	conn, err := grpc.NewClient(cfg.GRPCHost, grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(nil, "")))
+	if err != nil {
+		return nil, fmt.Errorf("grpc.Dial: %s %s", cfg.GRPCHost, err)
 	}
 
 	cancelCtx, cancelFn := context.WithCancel(context.Background())

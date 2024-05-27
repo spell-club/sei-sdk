@@ -7,21 +7,28 @@ import (
 const (
 	SingleTxMode = "single"
 	BatchTxMode  = "batch"
+
+	NetworkTestnet = "testnet"
+	NetworkMainnet = "mainnet"
+
+	ChainIDTestnet = "atlantic-2"
+	ChainIDMainnet = "pacific-1"
 )
 
 type Config struct {
 	Network  string
 	TxMode   string
-	ChainID  string
 	GRPCHost string // "grpc.atlantic-2.seinetwork.io:443"
 	RPCHost  string // "https://rpc.atlantic-2.seinetwork.io"
 
 	SignerName     string
 	SignerMnemonic string
+
+	chainID string
 }
 
 func (cfg *Config) Validate() error {
-	if cfg.Network != "testnet" && cfg.Network != "mainnet" && cfg.Network != "devnet" {
+	if cfg.Network != NetworkTestnet && cfg.Network != NetworkMainnet {
 		return fmt.Errorf("invalid Network")
 	}
 
@@ -35,6 +42,14 @@ func (cfg *Config) Validate() error {
 
 	if cfg.SignerName == "" || cfg.SignerMnemonic == "" {
 		return fmt.Errorf("empty SignerName (%s) or SignerMnemonic", cfg.SignerName)
+	}
+
+	if cfg.Network == NetworkTestnet {
+		cfg.chainID = ChainIDTestnet
+	}
+
+	if cfg.Network == NetworkMainnet {
+		cfg.chainID = ChainIDMainnet
 	}
 
 	return nil
