@@ -74,7 +74,7 @@ func (c *Client) AddSigner(name, mnemonic string) error {
 		for {
 			block, err := clientCtx.Client.Block(c.cancelCtx, nil)
 			if err != nil {
-				c.logger.Warnf("")
+				c.logger.Errorf("failed to get current block: %s", err)
 
 				continue
 			}

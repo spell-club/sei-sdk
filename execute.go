@@ -70,7 +70,7 @@ func (c *Client) asyncBroadcastMsg(msgs ...sdk.Msg) (*txtypes.BroadcastTxRespons
 
 	res, err := c.broadcastTx(ctx, c.txFactory, msgs...)
 	if err != nil {
-		for range 5 {
+		for i := range 5 {
 			if err == nil {
 				break
 			}
@@ -85,6 +85,8 @@ func (c *Client) asyncBroadcastMsg(msgs ...sdk.Msg) (*txtypes.BroadcastTxRespons
 
 				c.txFactory = c.txFactory.WithSequence(sequence)
 				c.txFactory = c.txFactory.WithAccountNumber(c.accNum)
+
+				c.logger.Warnf("send transaction retry: %d", i)
 
 				res, err = c.broadcastTx(ctx, c.txFactory, msgs...)
 				continue
