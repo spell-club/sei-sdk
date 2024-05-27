@@ -16,13 +16,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
-// AddSigner TODO: one template for all signers
 func (c *Client) AddSigner(name, mnemonic string) error {
-	tmClient, err := client.NewClientFromNode(c.rpcHost)
-	if err != nil {
-		return fmt.Errorf("NewClientFromNode error: %w", err)
-	}
-
 	cosmosKeyring := keyring.NewInMemory()
 	path := hd.CreateHDPath(118, 0, 0).String()
 
@@ -40,7 +34,7 @@ func (c *Client) AddSigner(name, mnemonic string) error {
 		TxConfig:      txConfig,
 	}.WithKeyring(cosmosKeyring).WithFromAddress(senderInfo.GetAddress()).
 		WithFromName(senderInfo.GetName()).WithFrom(senderInfo.GetName()).
-		WithAccountRetriever(authtypes.AccountRetriever{}).WithClient(tmClient).
+		WithAccountRetriever(authtypes.AccountRetriever{}).WithClient(c.tmClient).
 		WithInterfaceRegistry(c.interfaceRegistry)
 
 	txFactory := new(txf.Factory).

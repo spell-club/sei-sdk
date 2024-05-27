@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	"github.com/sirupsen/logrus"
+	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -51,6 +52,7 @@ type Client struct {
 	txFactory       txf.Factory
 	txClient        txtypes.ServiceClient
 	wasmQueryClient wasmtypes.QueryClient
+	tmClient        *rpchttp.HTTP
 
 	// Accounts counter
 	accNum uint64
@@ -95,6 +97,11 @@ func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) {
 	upgradetypes.RegisterInterfaces(interfaceRegistry)
 	feegranttypes.RegisterInterfaces(interfaceRegistry)
 
+	tmClient, err := client.NewClientFromNode(cfg.RPCHost)
+	if err != nil {
+		return nil, fmt.Errorf("NewClientFromNode error: %w", err)
+	}
+
 	conn, err := grpc.NewClient(cfg.GRPCHost, grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(nil, "")))
 	if err != nil {
 		return nil, fmt.Errorf("grpc.Dial: %s %s", cfg.GRPCHost, err)
@@ -110,6 +117,7 @@ func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) {
 
 		txClient:        txtypes.NewServiceClient(conn),
 		wasmQueryClient: wasmtypes.NewQueryClient(conn),
+		tmClient:        tmClient,
 
 		rpcHost:  cfg.RPCHost,
 		chainID:  cfg.ChainID,
