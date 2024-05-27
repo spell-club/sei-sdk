@@ -39,7 +39,7 @@ func (c *Client) asyncBroadcastMsg(msgs ...sdkt.Msg) (*txtypes.BroadcastTxRespon
 				c.txFactory = c.txFactory.WithSequence(sequence)
 				c.txFactory = c.txFactory.WithAccountNumber(c.accNum)
 
-				c.logger.Warnf("send transaction retry: %d", i)
+				c.logger.Warnf("broadcastTx retry: %d", i)
 
 				res, err = c.broadcastTx(ctx, c.txFactory, msgs...)
 				continue
