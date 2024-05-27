@@ -20,7 +20,7 @@ func TestClient_SendTx(t *testing.T) {
 		RPCHost:  "https://rpc.atlantic-2.seinetwork.io",
 
 		SignerName:     "user",
-		SignerMnemonic: "hurt monster burger grocery drill afraid muffin rubber grid fuel clinic fuel",
+		SignerMnemonic: "x",
 	}
 
 	logger := log.WithFields(log.Fields{"module": "api"})
