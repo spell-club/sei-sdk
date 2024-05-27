@@ -1,4 +1,4 @@
-package sei_sdk
+package seisdk
 
 import (
 	"context"
@@ -8,11 +8,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	"github.com/sirupsen/logrus"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	txf "github.com/cosmos/cosmos-sdk/client/tx"
 	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
-	std "github.com/cosmos/cosmos-sdk/std"
+	"github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -61,15 +63,15 @@ type Client struct {
 
 	// Interfaces that we will reuse in AddSign
 	interfaceRegistry codecTypes.InterfaceRegistry
+	logger            *logrus.Entry
 }
 
 type sign struct {
-	ctx     client.Context
-	canSign bool
-	sender  string
+	ctx    client.Context
+	sender string
 }
 
-func NewClient(cfg Config) (c *Client, err error) {
+func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) {
 	if cfg.Network != "testnet" && cfg.Network != "mainnet" {
 		return c, fmt.Errorf("invalid network: %s. Can be 'testnet' or 'mainnet'", cfg.Network)
 	}
@@ -109,11 +111,12 @@ func NewClient(cfg Config) (c *Client, err error) {
 		txClient:        txtypes.NewServiceClient(conn),
 		wasmQueryClient: wasmtypes.NewQueryClient(conn),
 
-		interfaceRegistry: interfaceRegistry,
-
 		rpcHost:  cfg.RPCHost,
 		chainID:  cfg.ChainID,
 		contract: cfg.Contract,
+
+		interfaceRegistry: interfaceRegistry,
+		logger:            logger,
 	}
 
 	return c, nil

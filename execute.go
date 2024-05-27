@@ -1,17 +1,15 @@
-package sei_sdk
+package seisdk
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	cosmostypes "github.com/cosmos/cosmos-sdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 )
@@ -22,7 +20,7 @@ const (
 	msgBatchLen                      = 50
 )
 
-func (c *Client) SendTx(msgs []string) (string, error) {
+func (c *Client) Execute(address string, msgs []string) (string, error) {
 	if len(msgs) == 0 {
 		return "", errors.New("message is empty")
 	}
@@ -30,9 +28,9 @@ func (c *Client) SendTx(msgs []string) (string, error) {
 		return "", errors.New("too many messages")
 	}
 
-	txResult, err := c.asyncBroadcastMsg(Map(msgs, func(d string) cosmostypes.Msg {
+	txResult, err := c.asyncBroadcastMsg(Map(msgs, func(d string) sdk.Msg {
 		return &wasmtypes.MsgExecuteContract{
-			Sender:   c.sign.sender,
+			Sender:   address,
 			Contract: c.contract,
 			Msg:      []byte(d),
 		}
@@ -42,9 +40,9 @@ func (c *Client) SendTx(msgs []string) (string, error) {
 			var txHashR string
 
 			for _, chunk := range Chunk(msgs, len(msgs)/2+1) {
-				txHashR, err = c.SendTx(chunk)
+				txHashR, err = c.Execute(address, chunk)
 				if err != nil {
-					return "", fmt.Errorf("SendTx recursive call: %s", err)
+					return "", fmt.Errorf("Execute recursive call: %s", err)
 				}
 			}
 
@@ -62,8 +60,6 @@ func (c *Client) SendTx(msgs []string) (string, error) {
 }
 
 func (c *Client) asyncBroadcastMsg(msgs ...sdk.Msg) (*txtypes.BroadcastTxResponse, error) {
-	log.Printf("starting async broadcast")
-
 	ctx := context.Background()
 	c.syncMux.Lock()
 	defer c.syncMux.Unlock()
@@ -80,7 +76,11 @@ func (c *Client) asyncBroadcastMsg(msgs ...sdk.Msg) (*txtypes.BroadcastTxRespons
 			}
 
 			if strings.Contains(err.Error(), "account sequence mismatch") {
-				c.syncNonce()
+				err = c.syncNonce()
+				if err != nil {
+					return nil, fmt.Errorf("syncNonce: %s", err)
+				}
+
 				sequence = c.getAccSeq()
 
 				c.txFactory = c.txFactory.WithSequence(sequence)
@@ -190,13 +190,15 @@ func (c *Client) getAccSeq() uint64 {
 	return c.accSeq
 }
 
-func (c *Client) syncNonce() {
+func (c *Client) syncNonce() error {
 	num, seq, err := c.txFactory.AccountRetriever().GetAccountNumberSequence(c.sign.ctx, c.sign.ctx.GetFromAddress())
 	if err != nil {
-		return
+		return fmt.Errorf("GetAccountNumberSequence: %w", err)
 	} else if num != c.accNum {
-		return
+		return nil
 	}
 
 	c.accSeq = seq
+
+	return nil
 }

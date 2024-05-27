@@ -1,14 +1,14 @@
-package sei_sdk
+package seisdk
 
 import (
 	"encoding/json"
-	"log"
 	"testing"
 
 	"gotest.tools/assert"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	log "github.com/sirupsen/logrus"
 )
 
 func TestClient_SendTx(t *testing.T) {
@@ -21,7 +21,9 @@ func TestClient_SendTx(t *testing.T) {
 		RPCHost:  "https://rpc.atlantic-2.seinetwork.io",
 	}
 
-	client, err := NewClient(cfg)
+	logger := log.WithFields(log.Fields{"module": "api"})
+
+	client, err := NewClient(cfg, logger)
 	assert.NilError(t, err)
 
 	type ClaimMsg struct {
@@ -40,7 +42,7 @@ func TestClient_SendTx(t *testing.T) {
 
 	client.AddSigner("user", "hurt monster burger grocery drill afraid muffin rubber grid fuel clinic fuel")
 
-	hash, err := client.SendTx([]string{string(marshalledMsg)})
+	hash, err := client.Execute("", []string{string(marshalledMsg)})
 	assert.NilError(t, err)
 
 	log.Printf("\nhash: %s", hash)

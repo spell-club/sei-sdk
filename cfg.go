@@ -1,4 +1,4 @@
-package sei_sdk
+package seisdk
 
 type Config struct {
 	Network  string
