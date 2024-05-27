@@ -15,7 +15,6 @@ func TestClient_SendTx(t *testing.T) {
 	cfg := Config{
 		Network:  "testnet",
 		TxMode:   "single",
-		ChainID:  "atlantic-2",
 		GRPCHost: "grpc.atlantic-2.seinetwork.io:443",
 		RPCHost:  "https://rpc.atlantic-2.seinetwork.io",
 
