@@ -8,11 +8,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 
-	sdkt "github.com/cosmos/cosmos-sdk/types"
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 )
 
-func (c *Client) asyncBroadcastMsg(msgs ...sdkt.Msg) (*txtypes.BroadcastTxResponse, error) {
+func (c *Client) asyncBroadcastMsg(msgs ...sdktypes.Msg) (*txtypes.BroadcastTxResponse, error) {
 	ctx := context.Background()
 	c.syncMux.Lock()
 	defer c.syncMux.Unlock()
@@ -56,7 +56,7 @@ func (c *Client) asyncBroadcastMsg(msgs ...sdkt.Msg) (*txtypes.BroadcastTxRespon
 	return res, nil
 }
 
-func (c *Client) broadcastTx(ctx context.Context, txf tx.Factory, msgs ...sdkt.Msg) (resp *txtypes.BroadcastTxResponse, err error) { //nolint:gocritic
+func (c *Client) broadcastTx(ctx context.Context, txf tx.Factory, msgs ...sdktypes.Msg) (resp *txtypes.BroadcastTxResponse, err error) { //nolint:gocritic
 	txf, err = c.prepareFactory(c.sign.ctx, txf)
 	if err != nil {
 		return nil, fmt.Errorf("c.prepareFactory: %s", err)

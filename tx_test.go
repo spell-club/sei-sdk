@@ -7,7 +7,7 @@ import (
 	"gotest.tools/assert"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	sdkt "github.com/cosmos/cosmos-sdk/types"
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -35,7 +35,7 @@ func TestClient_SendTx(t *testing.T) {
 	}
 
 	var msg ClaimMsg
-	msg.Claim.Address = sdkt.AccAddress(secp256k1.GenPrivKey().PubKey().Address()).String()
+	msg.Claim.Address = sdktypes.AccAddress(secp256k1.GenPrivKey().PubKey().Address()).String()
 
 	marshalledMsg, err := json.Marshal(msg)
 	if err != nil {

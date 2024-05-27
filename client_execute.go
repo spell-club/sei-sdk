@@ -7,7 +7,7 @@ import (
 	"time"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	sdkt "github.com/cosmos/cosmos-sdk/types"
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 )
 
 const (
@@ -24,7 +24,7 @@ func (c *Client) Execute(contractAddress string, msgs []string) (string, error) 
 		return "", errors.New("too many messages")
 	}
 
-	txResult, err := c.asyncBroadcastMsg(Map(msgs, func(d string) sdkt.Msg {
+	txResult, err := c.asyncBroadcastMsg(Map(msgs, func(d string) sdktypes.Msg {
 		return &wasmtypes.MsgExecuteContract{
 			Sender:   c.sign.sender,
 			Contract: contractAddress,

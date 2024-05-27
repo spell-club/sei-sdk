@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	sdkt "github.com/cosmos/cosmos-sdk/types"
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 )
 
-func (c *Client) Instantiate(codeID uint64, label, instantiateMsg string, funds []sdkt.Coin) (string, error) {
+func (c *Client) Instantiate(codeID uint64, label, instantiateMsg string, funds []sdktypes.Coin) (string, error) {
 	if instantiateMsg == "" {
 		return "", errors.New("message code is empty")
 	}
