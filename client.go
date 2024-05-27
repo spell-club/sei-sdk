@@ -9,9 +9,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/sirupsen/logrus"
-	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -37,6 +34,7 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -59,19 +57,13 @@ type Client struct { //nolint:govet
 	txFactory       txf.Factory
 	txClient        txtypes.ServiceClient
 	wasmQueryClient wasmtypes.QueryClient
-	tmClient        *rpchttp.HTTP
 
 	// Accounts counter
 	accNum uint64
 	accSeq uint64
 
-	// Some config data
-	rpcHost string
-	chainID string
-
-	// Interfaces that we will reuse in AddSign
-	interfaceRegistry codecTypes.InterfaceRegistry
-	logger            *logrus.Entry
+	// Logger
+	logger *logrus.Entry
 }
 
 type sign struct {
@@ -122,17 +114,17 @@ func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) { //noli
 		return nil, fmt.Errorf("cosmosKeyring.NewAccount error: %w", err)
 	}
 
-	marshaller := codec.NewProtoCodec(c.interfaceRegistry)
+	marshaller := codec.NewProtoCodec(interfaceRegistry)
 	txConfig := tx.NewTxConfig(marshaller, []signing.SignMode{signing.SignMode_SIGN_MODE_DIRECT})
 
 	clientCtx := client.Context{
-		ChainID:       c.chainID,
+		ChainID:       cfg.ChainID,
 		BroadcastMode: flags.BroadcastAsync,
 		TxConfig:      txConfig,
 	}.WithKeyring(cosmosKeyring).WithFromAddress(senderInfo.GetAddress()).
 		WithFromName(senderInfo.GetName()).WithFrom(senderInfo.GetName()).
-		WithAccountRetriever(authtypes.AccountRetriever{}).WithClient(c.tmClient).
-		WithInterfaceRegistry(c.interfaceRegistry)
+		WithAccountRetriever(authtypes.AccountRetriever{}).WithClient(tmClient).
+		WithInterfaceRegistry(interfaceRegistry)
 
 	txFactory := new(txf.Factory).
 		WithKeybase(clientCtx.Keyring).
@@ -143,8 +135,6 @@ func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) { //noli
 		WithChainID(clientCtx.ChainID).
 		WithSignMode(signing.SignMode_SIGN_MODE_DIRECT).
 		WithGasPrices(DefaultGasPriceWithDenom)
-
-	c.txFactory = txFactory
 
 	sgn := &sign{
 		ctx:    clientCtx,
@@ -163,19 +153,14 @@ func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) { //noli
 		cancelCtx: cancelCtx,
 		cancelFn:  cancelFn,
 
+		txFactory:       txFactory,
 		txClient:        txtypes.NewServiceClient(conn),
 		wasmQueryClient: wasmtypes.NewQueryClient(conn),
-		tmClient:        tmClient,
 
-		rpcHost: cfg.RPCHost,
-		chainID: cfg.ChainID,
-
-		interfaceRegistry: interfaceRegistry,
-		logger:            logger,
-		accNum:            accNum,
-		accSeq:            accSeq,
-		txFactory:         txFactory,
-		sign:              sgn,
+		logger: logger,
+		accNum: accNum,
+		accSeq: accSeq,
+		sign:   sgn,
 	}
 
 	go func() {
