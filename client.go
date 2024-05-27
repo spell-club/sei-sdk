@@ -78,6 +78,11 @@ func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) {
 		return c, fmt.Errorf("invalid network: %s. Can be 'testnet' or 'mainnet'", cfg.Network)
 	}
 
+	err = cfg.Validate()
+	if err != nil {
+		return nil, err
+	}
+
 	config := sdk.GetConfig()
 	config.SetBech32PrefixForAccount(Bech32PrefixAccAddr, Bech32PrefixAccPub)
 	config.Seal()
