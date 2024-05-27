@@ -61,7 +61,7 @@ func (c *Client) AddSigner(name, mnemonic string) error {
 
 	c.sign = sgn
 
-	go func(cl *Client) {
+	go func() {
 		t := time.NewTicker(defaultTimeoutHeightSyncInterval)
 		defer t.Stop()
 
@@ -82,7 +82,7 @@ func (c *Client) AddSigner(name, mnemonic string) error {
 				continue
 			}
 		}
-	}(c)
+	}()
 
 	return nil
 }

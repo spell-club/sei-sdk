@@ -38,7 +38,7 @@ const (
 	Bech32PrefixAccPub       = "seipub"
 )
 
-type Client struct {
+type Client struct { //nolint:govet
 	// Sign for transactions
 	sign *sign
 
@@ -73,7 +73,7 @@ type sign struct {
 	sender string
 }
 
-func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) {
+func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) { //nolint:gocritic
 	err = cfg.Validate()
 	if err != nil {
 		return nil, err

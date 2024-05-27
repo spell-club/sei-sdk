@@ -103,7 +103,7 @@ func (c *Client) asyncBroadcastMsg(msgs ...sdk.Msg) (*txtypes.BroadcastTxRespons
 	return res, nil
 }
 
-func (c *Client) broadcastTx(ctx context.Context, txf tx.Factory, msgs ...sdk.Msg) (resp *txtypes.BroadcastTxResponse, err error) {
+func (c *Client) broadcastTx(ctx context.Context, txf tx.Factory, msgs ...sdk.Msg) (resp *txtypes.BroadcastTxResponse, err error) { //nolint:gocritic
 	txf, err = c.prepareFactory(c.sign.ctx, txf)
 	if err != nil {
 		return nil, fmt.Errorf("c.prepareFactory: %s", err)
@@ -159,7 +159,7 @@ func (c *Client) broadcastTx(ctx context.Context, txf tx.Factory, msgs ...sdk.Ms
 	return resp, nil
 }
 
-func (*Client) prepareFactory(clientCtx client.Context, txf tx.Factory) (tx.Factory, error) {
+func (*Client) prepareFactory(clientCtx client.Context, txf tx.Factory) (tx.Factory, error) { //nolint:gocritic
 	from := clientCtx.GetFromAddress()
 
 	if err := txf.AccountRetriever().EnsureExists(clientCtx, from); err != nil {

@@ -7,7 +7,7 @@ import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 )
 
-func (c *Client) Instantiate(address string, code string) (string, error) {
+func (c *Client) Instantiate(address, code string) (string, error) {
 	if code == "" {
 		return "", errors.New("message code is empty")
 	}
