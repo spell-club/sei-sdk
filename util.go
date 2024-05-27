@@ -1,4 +1,4 @@
-package sei_sdk
+package sdk
 
 func Map[T any, I any](ss []T, callback func(T) I) []I {
 	if len(ss) == 0 {

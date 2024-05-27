@@ -1,4 +1,4 @@
-package sei_sdk
+package sdk
 
 import (
 	"context"

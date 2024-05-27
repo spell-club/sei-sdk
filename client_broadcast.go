@@ -1,69 +1,18 @@
-package sei_sdk
+package sdk
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"log"
 	"strings"
-	"time"
 
-	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	cosmostypes "github.com/cosmos/cosmos-sdk/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 )
 
-const (
-	defaultTimeoutHeight             = 20
-	defaultTimeoutHeightSyncInterval = 10 * time.Second
-	msgBatchLen                      = 50
-)
-
-func (c *Client) SendTx(msgs []string) (string, error) {
-	if len(msgs) == 0 {
-		return "", errors.New("message is empty")
-	}
-	if len(msgs) > msgBatchLen {
-		return "", errors.New("too many messages")
-	}
-
-	txResult, err := c.asyncBroadcastMsg(Map(msgs, func(d string) cosmostypes.Msg {
-		return &wasmtypes.MsgExecuteContract{
-			Sender:   c.sign.sender,
-			Contract: c.contract,
-			Msg:      []byte(d),
-		}
-	})...)
-	if err != nil {
-		if strings.Contains(err.Error(), "is greater than max gas") && len(msgs) > 2 {
-			var txHashR string
-
-			for _, chunk := range Chunk(msgs, len(msgs)/2+1) {
-				txHashR, err = c.SendTx(chunk)
-				if err != nil {
-					return "", fmt.Errorf("SendTx recursive call: %s", err)
-				}
-			}
-
-			return txHashR, nil
-		}
-
-		return "", fmt.Errorf("AsyncBroadcastMsg: %s", err)
-	}
-
-	if txResult == nil || txResult.GetTxResponse() == nil {
-		return "", fmt.Errorf("txResult is nil: %v", txResult)
-	}
-
-	return txResult.GetTxResponse().TxHash, nil
-}
-
-func (c *Client) asyncBroadcastMsg(msgs ...sdk.Msg) (*txtypes.BroadcastTxResponse, error) {
-	log.Printf("starting async broadcast")
-
+func (c *Client) asyncBroadcastMsg(msgs ...sdktypes.Msg) (*txtypes.BroadcastTxResponse, error) {
 	ctx := context.Background()
 	c.syncMux.Lock()
 	defer c.syncMux.Unlock()
@@ -74,17 +23,25 @@ func (c *Client) asyncBroadcastMsg(msgs ...sdk.Msg) (*txtypes.BroadcastTxRespons
 
 	res, err := c.broadcastTx(ctx, c.txFactory, msgs...)
 	if err != nil {
-		for range 5 {
+		for i := range 5 {
 			if err == nil {
 				break
 			}
 
 			if strings.Contains(err.Error(), "account sequence mismatch") {
-				c.syncNonce()
+				err = c.syncNonce()
+				if err != nil {
+					c.logger.Warnf("syncNonce failed: %s", err)
+
+					continue
+				}
+
 				sequence = c.getAccSeq()
 
 				c.txFactory = c.txFactory.WithSequence(sequence)
 				c.txFactory = c.txFactory.WithAccountNumber(c.accNum)
+
+				c.logger.Warnf("broadcastTx retry: %d", i)
 
 				res, err = c.broadcastTx(ctx, c.txFactory, msgs...)
 				continue
@@ -101,7 +58,7 @@ func (c *Client) asyncBroadcastMsg(msgs ...sdk.Msg) (*txtypes.BroadcastTxRespons
 	return res, nil
 }
 
-func (c *Client) broadcastTx(ctx context.Context, txf tx.Factory, msgs ...sdk.Msg) (resp *txtypes.BroadcastTxResponse, err error) {
+func (c *Client) broadcastTx(ctx context.Context, txf tx.Factory, msgs ...sdktypes.Msg) (resp *txtypes.BroadcastTxResponse, err error) { //nolint:gocritic
 	txf, err = c.prepareFactory(c.sign.ctx, txf)
 	if err != nil {
 		return nil, fmt.Errorf("c.prepareFactory: %s", err)
@@ -157,7 +114,7 @@ func (c *Client) broadcastTx(ctx context.Context, txf tx.Factory, msgs ...sdk.Ms
 	return resp, nil
 }
 
-func (*Client) prepareFactory(clientCtx client.Context, txf tx.Factory) (tx.Factory, error) {
+func (*Client) prepareFactory(clientCtx client.Context, txf tx.Factory) (tx.Factory, error) { //nolint:gocritic
 	from := clientCtx.GetFromAddress()
 
 	if err := txf.AccountRetriever().EnsureExists(clientCtx, from); err != nil {
@@ -190,13 +147,15 @@ func (c *Client) getAccSeq() uint64 {
 	return c.accSeq
 }
 
-func (c *Client) syncNonce() {
+func (c *Client) syncNonce() error {
 	num, seq, err := c.txFactory.AccountRetriever().GetAccountNumberSequence(c.sign.ctx, c.sign.ctx.GetFromAddress())
 	if err != nil {
-		return
+		return fmt.Errorf("GetAccountNumberSequence: %w", err)
 	} else if num != c.accNum {
-		return
+		return nil
 	}
 
 	c.accSeq = seq
+
+	return nil
 }
