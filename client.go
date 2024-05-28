@@ -58,6 +58,7 @@ type Client struct { //nolint:govet
 	txFactory       txf.Factory
 	txClient        txtypes.ServiceClient
 	wasmQueryClient wasmtypes.QueryClient
+	bankQueryClient banktypes.QueryClient
 
 	// Accounts counter
 	accNum uint64
@@ -157,6 +158,7 @@ func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) { //noli
 		txFactory:       txFactory,
 		txClient:        txtypes.NewServiceClient(conn),
 		wasmQueryClient: wasmtypes.NewQueryClient(conn),
+		bankQueryClient: banktypes.NewQueryClient(conn),
 
 		logger: logger,
 		accNum: accNum,
@@ -188,4 +190,8 @@ func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) { //noli
 	}()
 
 	return c, nil
+}
+
+func (c *Client) GetSignerAddress() string {
+	return c.sign.sender
 }
