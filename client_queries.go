@@ -5,6 +5,7 @@ import (
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
+	"github.com/tendermint/tendermint/rpc/client"
 )
 
 func (c *Client) FetchContractInfo(ctx context.Context, address string) (*wasmtypes.QueryContractInfoResponse, error) {
@@ -81,4 +82,8 @@ func (c *Client) FetchPinnedCodes(ctx context.Context, pagination *query.PageReq
 
 func (c *Client) GetSignerAddress() string {
 	return c.sign.sender
+}
+
+func (c *Client) GetTendermintClient() (client.Client, error) {
+	return c.sign.ctx.GetNode()
 }
