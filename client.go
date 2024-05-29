@@ -143,9 +143,22 @@ func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) { //noli
 		return nil, fmt.Errorf("GetAccountNumberSequence error: %w", err)
 	}
 
-	conn, err := grpc.NewClient(cfg.GRPCHost, grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(nil, "")))
-	if err != nil {
-		return nil, fmt.Errorf("grpc.Dial: %s %s", cfg.GRPCHost, err)
+	var conn *grpc.ClientConn
+	if cfg.BuildAuthBasedOnRPCHost {
+		target, options, err := getGrpcOptions(cfg.RPCHost)
+		if err != nil {
+			return nil, fmt.Errorf("getGrpcOptions error: %w", err)
+		}
+
+		conn, err = grpc.NewClient(target, options...)
+		if err != nil {
+			return nil, fmt.Errorf("grpc.Dial: %s %s %s", cfg.RPCHost, target, err)
+		}
+	} else {
+		conn, err = grpc.NewClient(cfg.GRPCHost, grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(nil, "")))
+		if err != nil {
+			return nil, fmt.Errorf("grpc.Dial: %s %s", cfg.GRPCHost, err)
+		}
 	}
 
 	cancelCtx, cancelFn := context.WithCancel(context.Background())

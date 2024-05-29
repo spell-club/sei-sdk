@@ -24,6 +24,8 @@ type Config struct {
 	SignerName     string
 	SignerMnemonic string
 
+	BuildAuthBasedOnRPCHost bool
+
 	chainID string
 }
 
