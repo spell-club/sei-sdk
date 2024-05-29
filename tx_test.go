@@ -17,6 +17,7 @@ func TestClient_SendTx(t *testing.T) {
 		TxMode:   "single",
 		GRPCHost: "grpc.atlantic-2.seinetwork.io:443",
 		RPCHost:  "https://rpc.atlantic-2.seinetwork.io",
+		WSSHost:  "wss://rpc.atlantic-2.seinetwork.io/websocket",
 
 		SignerName:     "user",
 		SignerMnemonic: "x",
@@ -29,12 +30,14 @@ func TestClient_SendTx(t *testing.T) {
 
 	type ClaimMsg struct {
 		Claim struct {
-			Address string `json:"address"`
+			Address        string `json:"address"`
+			ReferalAddress string `json:"referral_address"`
 		} `json:"claim"`
 	}
 
 	var msg ClaimMsg
 	msg.Claim.Address = sdktypes.AccAddress(secp256k1.GenPrivKey().PubKey().Address()).String()
+	msg.Claim.ReferalAddress = "sei1zydvsxz5x40tcvywdqe8rahj59xyjwtztfjlq6"
 
 	marshalledMsg, err := json.Marshal(msg)
 	if err != nil {
