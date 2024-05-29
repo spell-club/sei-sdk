@@ -27,11 +27,13 @@ func TestClient_Subscribe(t *testing.T) {
 	client, err := NewClient(cfg, logger)
 	assert.NilError(t, err)
 
-	acknowledge := func(msg SubscribeMessage) error {
+	acknowledge := func(ctx context.Context, msg SubscribeMessage) error {
+		log.Printf("%v", msg)
+
 		return nil
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, _ := context.WithTimeout(context.Background(), time.Second*30)
 
 	err = client.Subscribe(ctx, "sei154p8wkvvgvkrm849ahnw9xwx6v4yj8c9wmfwc83x4u6shcmdyq9qavegg7", acknowledge)
 	assert.NilError(t, err)

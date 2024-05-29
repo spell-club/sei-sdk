@@ -163,6 +163,7 @@ func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) { //noli
 		cancelFn:  cancelFn,
 
 		txFactory:       txFactory,
+		tmClient:        tmClient,
 		txClient:        txtypes.NewServiceClient(conn),
 		wasmQueryClient: wasmtypes.NewQueryClient(conn),
 		bankQueryClient: banktypes.NewQueryClient(conn),
