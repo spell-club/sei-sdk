@@ -27,7 +27,7 @@ var unsubscribeMessage = `{
 	"id": 0,
 }`
 
-func (c *Client) Subscribe(ctx context.Context, contractAddress string, acknowledge func(msg SubscribeMessage) error) error {
+func (c *Client) Subscribe(ctx context.Context, contractAddress string, acknowledge func(ctx context.Context, msg SubscribeMessage) error) error {
 	for {
 		conn, _, err := websocket.DefaultDialer.Dial(c.wss.host, nil)
 		if err != nil {
@@ -58,7 +58,7 @@ func (c *Client) Subscribe(ctx context.Context, contractAddress string, acknowle
 					return
 				}
 
-				err = acknowledge(resp)
+				err = acknowledge(ctx, resp)
 				if err != nil {
 					c.logger.Logger.Errorf("acknowledge: %s", err)
 
