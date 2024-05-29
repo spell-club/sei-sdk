@@ -5,12 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
 
-const reconnectDelay = 5 * time.Second
+const reconnectDelay = 2 * time.Second
 
 var subscribeMessage = `{
 	"jsonrpc": "2.0",
@@ -39,8 +40,12 @@ func (c *Client) Subscribe(ctx context.Context, contractAddress string, acknowle
 			return fmt.Errorf("conn.WriteMessage: %w", err)
 		}
 
+		wg := &sync.WaitGroup{}
 		done := make(chan struct{})
 		go func() {
+			wg.Add(1)
+			defer wg.Done()
+
 			for {
 				var message []byte
 				_, message, err = conn.ReadMessage()
@@ -85,6 +90,7 @@ func (c *Client) Subscribe(ctx context.Context, contractAddress string, acknowle
 			if err != nil {
 				return fmt.Errorf("conn.Close: %w", err)
 			}
+			wg.Wait()
 
 			return nil
 		}
