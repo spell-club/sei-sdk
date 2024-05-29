@@ -28,7 +28,6 @@ func TestClient_Subscribe(t *testing.T) {
 	assert.NilError(t, err)
 
 	acknowledge := func(msg SubscribeMessage) error {
-		log.Printf("%s", msg.Result.Data.Value.TxResult.Result.Log)
 		return nil
 	}
 

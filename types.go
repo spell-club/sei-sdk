@@ -1,27 +1,14 @@
 package sdk
 
 type SubscribeMessage struct {
-	Result Result `json:"result"`
-}
-
-type Result struct {
-	SubscriptionID string `json:"subscription_id"`
-	Query          string `json:"query"`
-	Data           Data   `json:"data"`
-}
-
-type Data struct {
-	Value Value `json:"value"`
-}
-
-type Value struct {
-	TxResult TxResult `json:"TxResult"`
-}
-
-type TxResult struct {
-	Result ResultDetail `json:"result"`
-}
-
-type ResultDetail struct {
-	Log string `json:"log"`
+	Result struct {
+		Events struct {
+			WasmContractAddress []string `json:"wasm._contract_address"`
+			WasmReferralAddr    []string `json:"wasm.referral_addr"`
+			WasmReferralAmount  []string `json:"wasm.referral_amount"`
+			WasmAddress         []string `json:"wasm.address"`
+			TxHeight            []string `json:"tx.height"`
+			TxHash              []string `json:"tx.hash"`
+		} `json:"events"`
+	} `json:"result"`
 }
