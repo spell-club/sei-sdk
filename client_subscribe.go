@@ -29,6 +29,10 @@ var unsubscribeMessage = `{
 }`
 
 func (c *Client) Subscribe(ctx context.Context, contractAddress string, acknowledge func(ctx context.Context, msg SubscribeMessage) error) error {
+	if c.wss.host == "" {
+		return fmt.Errorf("websocket host wasn't provided in config")
+	}
+
 	for {
 		conn, _, err := websocket.DefaultDialer.Dial(c.wss.host, nil)
 		if err != nil {

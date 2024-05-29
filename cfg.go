@@ -37,8 +37,8 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("invalid TxMode: %s; Possible values: %s, %s", cfg.TxMode, SingleTxMode, BatchTxMode)
 	}
 
-	if cfg.Network == "" || cfg.RPCHost == "" || cfg.GRPCHost == "" || cfg.WSSHost == "" {
-		return fmt.Errorf("empty Network (%s) or RPCHost (%s) or GRPCHost (%s) or WSSHost (%s)", cfg.Network, cfg.RPCHost, cfg.GRPCHost, cfg.WSSHost)
+	if cfg.Network == "" || cfg.RPCHost == "" || cfg.GRPCHost == "" {
+		return fmt.Errorf("empty Network (%s) or RPCHost (%s) or GRPCHost (%s)", cfg.Network, cfg.RPCHost, cfg.GRPCHost)
 	}
 
 	if cfg.SignerName == "" || cfg.SignerMnemonic == "" {
