@@ -2,7 +2,10 @@ package sdk
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -12,6 +15,20 @@ import (
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 )
 
+var failedTxRegexp = regexp.MustCompile(`account sequence mismatch, expected (\d+), got`)
+
+func getExpectedSequence(err string) (uint64, error) {
+	if err == "" {
+		return 0, errors.New("empty err")
+	}
+
+	res := failedTxRegexp.FindStringSubmatch(err)
+	if len(res) < 2 {
+		return 0, errors.New("failed to find")
+	}
+	return strconv.ParseUint(res[1], 10, 64)
+}
+
 func (c *Client) asyncBroadcastMsg(msgs ...sdktypes.Msg) (*txtypes.BroadcastTxResponse, error) {
 	ctx := context.Background()
 	c.syncMux.Lock()
@@ -19,7 +36,6 @@ func (c *Client) asyncBroadcastMsg(msgs ...sdktypes.Msg) (*txtypes.BroadcastTxRe
 
 	sequence := c.getAccSeq()
 	c.txFactory = c.txFactory.WithSequence(sequence)
-	c.txFactory = c.txFactory.WithAccountNumber(c.accNum)
 
 	c.logger.Debugf("asyncBroadcastMsg: send with seq %d", sequence)
 	res, err := c.broadcastTx(ctx, c.txFactory, msgs...)
@@ -30,16 +46,19 @@ func (c *Client) asyncBroadcastMsg(msgs ...sdktypes.Msg) (*txtypes.BroadcastTxRe
 			}
 
 			if strings.Contains(err.Error(), "account sequence mismatch") {
-				if err := c.syncNonce(); err != nil {
-					c.logger.Warnf("syncNonce failed: %s", err)
-					continue
+				{
+					expectedSeq, err := getExpectedSequence(err.Error())
+					if err != nil {
+						c.logger.Errorf("asyncBroadcastMsg: getExpectedSequence: %s", err)
+						continue
+					}
+					c.setAccSeq(expectedSeq)
 				}
 
 				prevSeq := sequence
 				sequence = c.getAccSeq()
 
 				c.txFactory = c.txFactory.WithSequence(sequence)
-				c.txFactory = c.txFactory.WithAccountNumber(c.accNum)
 
 				c.logger.Warnf("broadcastTx retry: %d; prevSeq %d, curSeq %d; err %s", i, prevSeq, sequence, err)
 
@@ -140,24 +159,12 @@ func (*Client) prepareFactory(clientCtx client.Context, txf tx.Factory) (tx.Fact
 	return txf, nil
 }
 
-func (c *Client) getAccSeq() uint64 {
-	defer func() {
-		c.accSeq++
-	}()
-	return c.accSeq
+func (c *Client) getAccSeq() (res uint64) {
+	res = c.accSeq
+	c.accSeq++
+	return
 }
 
-func (c *Client) syncNonce() error {
-	num, seq, err := c.txFactory.AccountRetriever().GetAccountNumberSequence(c.sign.ctx, c.sign.ctx.GetFromAddress())
-	c.logger.Debugf("syncNonce: c.accNum %d, num %d, prevSeq %d, curSeq %d", c.accNum, num, c.accSeq, seq)
-
-	if err != nil {
-		return fmt.Errorf("GetAccountNumberSequence: %w", err)
-	} else if num != c.accNum {
-		return nil
-	}
-
-	c.accSeq = seq
-
-	return nil
+func (c *Client) setAccSeq(v uint64) {
+	c.accSeq = v
 }

@@ -140,6 +140,8 @@ func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) { //noli
 		return nil, fmt.Errorf("GetAccountNumberSequence: %w", err)
 	}
 
+	txFactory = txFactory.WithAccountNumber(accNum)
+
 	conn, err := getGRPCConn(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("getGRPCConn: %s", err)
