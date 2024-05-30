@@ -21,6 +21,7 @@ func (c *Client) asyncBroadcastMsg(msgs ...sdktypes.Msg) (*txtypes.BroadcastTxRe
 	c.txFactory = c.txFactory.WithSequence(sequence)
 	c.txFactory = c.txFactory.WithAccountNumber(c.accNum)
 
+	c.logger.Debugf("asyncBroadcastMsg: send with seq %d", sequence)
 	res, err := c.broadcastTx(ctx, c.txFactory, msgs...)
 	if err != nil {
 		for i := range 5 {
@@ -38,12 +39,10 @@ func (c *Client) asyncBroadcastMsg(msgs ...sdktypes.Msg) (*txtypes.BroadcastTxRe
 				prevSeq := sequence
 				sequence = c.getAccSeq()
 
-				c.logger.Debugf("broadcastTx: prevSeq %d, curSeq %d", prevSeq, sequence)
-
 				c.txFactory = c.txFactory.WithSequence(sequence)
 				c.txFactory = c.txFactory.WithAccountNumber(c.accNum)
 
-				c.logger.Warnf("broadcastTx retry: %d", i)
+				c.logger.Warnf("broadcastTx retry: %d; prevSeq %d, curSeq %d; err %s", i, prevSeq, sequence, err)
 
 				res, err = c.broadcastTx(ctx, c.txFactory, msgs...)
 				continue
