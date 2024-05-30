@@ -46,9 +46,6 @@ type Client struct { //nolint:govet
 	// Sign for transactions
 	sign *sign
 
-	// Websocket data
-	wss wss
-
 	// Conn and sync services
 	conn      *grpc.ClientConn
 	syncMux   *sync.Mutex
@@ -72,10 +69,6 @@ type Client struct { //nolint:govet
 type sign struct {
 	ctx    client.Context
 	sender string
-}
-
-type wss struct {
-	host string
 }
 
 func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) { //nolint:gocritic
@@ -169,8 +162,6 @@ func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) { //noli
 		accNum: accNum,
 		accSeq: accSeq,
 		sign:   sgn,
-
-		wss: wss{host: cfg.WSSHost},
 	}
 
 	go func() {

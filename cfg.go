@@ -20,7 +20,6 @@ type Config struct {
 	TxMode   string
 	GRPCHost string // "grpc.atlantic-2.seinetwork.io:443"
 	RPCHost  string // "https://rpc.atlantic-2.seinetwork.io"
-	WSSHost  string // wss://rpc.atlantic-2.seinetwork.io/websocket
 
 	SignerName     string
 	SignerMnemonic string
