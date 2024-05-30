@@ -30,8 +30,7 @@ func (c *Client) asyncBroadcastMsg(msgs ...sdktypes.Msg) (*txtypes.BroadcastTxRe
 			}
 
 			if strings.Contains(err.Error(), "account sequence mismatch") {
-				err = c.syncNonce()
-				if err != nil {
+				if err := c.syncNonce(); err != nil {
 					c.logger.Warnf("syncNonce failed: %s", err)
 					continue
 				}
