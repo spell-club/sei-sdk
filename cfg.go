@@ -26,6 +26,9 @@ type Config struct {
 	SignerMnemonic string
 
 	chainID string
+
+	InsecureGRPC bool
+	UseBasicAuth bool
 }
 
 func (cfg *Config) Validate() error {

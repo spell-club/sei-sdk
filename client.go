@@ -6,11 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-
-	"github.com/sirupsen/logrus"
-
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -36,6 +31,8 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -147,12 +144,12 @@ func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) { //noli
 
 	accNum, accSeq, err := txFactory.AccountRetriever().GetAccountNumberSequence(clientCtx, clientCtx.GetFromAddress())
 	if err != nil {
-		return nil, fmt.Errorf("GetAccountNumberSequence error: %w", err)
+		return nil, fmt.Errorf("GetAccountNumberSequence: %w", err)
 	}
 
-	conn, err := grpc.NewClient(cfg.GRPCHost, grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(nil, "")))
+	conn, err := getGRPCConn(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("grpc.Dial: %s %s", cfg.GRPCHost, err)
+		return nil, fmt.Errorf("getGRPCConn: %s", err)
 	}
 
 	cancelCtx, cancelFn := context.WithCancel(context.Background())
