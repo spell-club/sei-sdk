@@ -7,7 +7,7 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-const searchByHeightQuery = `tx.height>%d AND tx.height<%d AND wasm._contract_address CONTAINS '%s'`
+const searchByHeightQuery = `tx.height>%d AND tx.height<%d AND wasm._contract_address CONTAINS '%s' AND wasm.action='execute_claim'`
 
 func (c *Client) HandleTxsByHeight(ctx context.Context, contractAddress string, heightFrom, heightTo int64, acknowledge func(ctx context.Context, msg []abci.Event) error) error {
 	query := fmt.Sprintf(searchByHeightQuery, heightFrom, heightTo, contractAddress)
