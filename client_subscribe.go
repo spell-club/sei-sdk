@@ -28,7 +28,7 @@ var unsubscribeMessage = `{
 	"id": 0,
 }`
 
-func (c *Client) Subscribe(ctx context.Context, contractAddress string, acknowledge func(ctx context.Context, msg SubscribeMessage) error) error {
+func (c *Client) Subscribe(ctx context.Context, contractAddress string, acknowledge func(ctx context.Context, msg Events) error) error {
 	if c.wss.host == "" {
 		return fmt.Errorf("websocket host wasn't provided in config")
 	}
@@ -67,7 +67,7 @@ func (c *Client) Subscribe(ctx context.Context, contractAddress string, acknowle
 					return
 				}
 
-				err = acknowledge(ctx, resp)
+				err = acknowledge(ctx, resp.Result.Events)
 				if err != nil {
 					c.logger.Logger.Errorf("acknowledge: %s", err)
 
