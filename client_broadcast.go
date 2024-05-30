@@ -32,11 +32,13 @@ func (c *Client) asyncBroadcastMsg(msgs ...sdktypes.Msg) (*txtypes.BroadcastTxRe
 				err = c.syncNonce()
 				if err != nil {
 					c.logger.Warnf("syncNonce failed: %s", err)
-
 					continue
 				}
 
+				prevSeq := sequence
 				sequence = c.getAccSeq()
+
+				c.logger.Debugf("broadcastTx: prevSeq %d, curSeq %d", prevSeq, sequence)
 
 				c.txFactory = c.txFactory.WithSequence(sequence)
 				c.txFactory = c.txFactory.WithAccountNumber(c.accNum)
@@ -149,6 +151,8 @@ func (c *Client) getAccSeq() uint64 {
 
 func (c *Client) syncNonce() error {
 	num, seq, err := c.txFactory.AccountRetriever().GetAccountNumberSequence(c.sign.ctx, c.sign.ctx.GetFromAddress())
+	c.logger.Debugf("syncNonce: c.accNum %d, num %d, prevSeq %d, curSeq %d", c.accNum, num, c.accSeq, seq)
+
 	if err != nil {
 		return fmt.Errorf("GetAccountNumberSequence: %w", err)
 	} else if num != c.accNum {
