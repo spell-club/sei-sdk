@@ -40,6 +40,10 @@ const (
 	Bech32PrefixAccAddr      = "sei"
 	Bech32PrefixAccPub       = "seipub"
 )
+const (
+	defaultTimeoutHeight             = 20
+	defaultTimeoutHeightSyncInterval = 10 * time.Second
+)
 
 type Client struct { //nolint:govet
 	// Sign for transactions
