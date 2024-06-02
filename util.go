@@ -1,31 +1,21 @@
 package sdk
 
-func Map[T any, I any](ss []T, callback func(T) I) []I {
-	if len(ss) == 0 {
-		return nil
+import "github.com/cosmos/cosmos-sdk/types/bech32"
+
+func IsValidBlockchainAddress(address string) bool {
+	hrp, _, err := bech32.DecodeAndConvert(address)
+	if err != nil || hrp != Bech32PrefixAccAddr {
+		return false
 	}
 
-	ret := make([]I, 0, len(ss))
-	for i := range ss {
-		ret = append(ret, callback(ss[i]))
-	}
-
-	return ret
+	return true
 }
 
-func Chunk[T any](slice []T, chunkSize int) (chunks [][]T) {
-	for {
-		if len(slice) == 0 {
-			break
-		}
-
-		if len(slice) < chunkSize {
-			chunkSize = len(slice)
-		}
-
-		chunks = append(chunks, slice[0:chunkSize])
-		slice = slice[chunkSize:]
+func ConvertAddr(address, hrp string) (string, error) {
+	_, addrBytes, err := bech32.DecodeAndConvert(address)
+	if err != nil {
+		return "", err
 	}
 
-	return
+	return bech32.ConvertAndEncode(hrp, addrBytes)
 }
