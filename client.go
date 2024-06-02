@@ -172,8 +172,10 @@ func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) { //noli
 		for {
 			block, err := clientCtx.Client.Block(c.cancelCtx, nil)
 			if err != nil {
-				c.logger.Errorf("failed to get current block: %s", err)
-
+				if c.logger != nil {
+					c.logger.Warnf("failed to get current block: %s", err)
+				}
+				time.Sleep(3 * time.Second)
 				continue
 			}
 
@@ -183,7 +185,6 @@ func NewClient(cfg Config, logger *logrus.Entry) (c *Client, err error) { //noli
 			case <-c.cancelCtx.Done():
 				return
 			case <-t.C:
-				continue
 			}
 		}
 	}()

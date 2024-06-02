@@ -13,7 +13,8 @@ replace (
 require (
 	github.com/CosmWasm/wasmd v0.0.0-00010101000000-000000000000
 	github.com/cosmos/cosmos-sdk v0.45.10
-	github.com/sirupsen/logrus v1.8.1
+	github.com/sirupsen/logrus v1.9.3
+	github.com/tendermint/tendermint v0.37.0-dev
 	google.golang.org/grpc v1.64.0
 	gotest.tools v2.2.0+incompatible
 )
@@ -111,7 +112,6 @@ require (
 	github.com/tendermint/btcd v0.1.1 // indirect
 	github.com/tendermint/crypto v0.0.0-20191022145703-50d29ede1e15 // indirect
 	github.com/tendermint/go-amino v0.16.0 // indirect
-	github.com/tendermint/tendermint v0.37.0-dev // indirect
 	github.com/tendermint/tm-db v0.6.8-0.20220519162814-e24b96538a12 // indirect
 	github.com/zondax/hid v0.9.1 // indirect
 	github.com/zondax/ledger-go v0.14.1 // indirect
