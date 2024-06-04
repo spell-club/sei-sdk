@@ -22,6 +22,7 @@ type (
 	}
 )
 
+// Validate validates config for empty fields
 func (cfg *Config) Validate() error {
 	if cfg.RPCHost == "" {
 		return errors.New("empty RPCHost")

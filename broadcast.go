@@ -10,6 +10,11 @@ import (
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 )
 
+// broadcastTx signs and broadcasts tx to the network
+// it also does several other things
+// - retrieves the proper acc sequence via GetAccountNumberSequence
+// - runs the simulation via Simulate
+// - adjusts Gas
 func (c *Client) broadcastTx(ctx context.Context, sgn *signer, msgs ...sdktypes.Msg) (resp *txtypes.BroadcastTxResponse, err error) {
 	if !c.canSign {
 		return resp, errors.New("can't sign. Add signature before sending tx")

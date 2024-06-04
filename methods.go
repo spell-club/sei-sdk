@@ -16,40 +16,52 @@ import (
 	"github.com/tendermint/tendermint/rpc/coretypes"
 )
 
-const DefaultDenom = "usei"
+const (
+	// DefaultDenom is the default denomination for Sei blockchain
+	DefaultDenom = "usei"
+)
 
+// GetBankBalance queries a Cosmos SDK bank for the balance of a specific account denominated in a specific denom
 func (c *Client) GetBankBalance(ctx context.Context, address, denom string) (*banktypes.QueryBalanceResponse, error) {
+	// Create a QueryBalanceRequest struct with the provided address and denom
 	req := &banktypes.QueryBalanceRequest{
 		Address: address,
 		Denom:   denom,
 	}
+	// Call the bankQueryClient to query the balance
 	return c.bankQueryClient.Balance(ctx, req)
 }
 
+// ExecuteJson simplifies sending an arbitrary JSON message to a Wasm contract
 func (c *Client) ExecuteJson(ctx context.Context, signerName, contractAddress string, msg interface{}) (resp *txtypes.BroadcastTxResponse, err error) {
+	// Marshal the provided message into a byte array
 	marshalledMsg, err := json.Marshal(msg)
 	if err != nil {
 		return nil, err
 	}
-
+	// Delegate the execution to the Execute function with the marshalled message
 	return c.Execute(ctx, signerName, contractAddress, string(marshalledMsg))
 }
 
+// Execute broadcasts a transaction to execute a message on a Wasm contract
 func (c *Client) Execute(ctx context.Context, signerName, contractAddress, msg string) (resp *txtypes.BroadcastTxResponse, err error) {
+	// Validate that the message is not empty
 	if msg == "" {
 		return resp, errors.New("message is empty")
 	}
-
+	// Retrieve the signer information for the provided signer name
 	sgn, err := c.getSigner(signerName)
 	if err != nil {
 		return resp, err
 	}
-
-	resp, err = c.broadcastTx(ctx, sgn, &wasmtypes.MsgExecuteContract{
+	// Create a MsgExecuteContract message with the signer address, contract address, and message
+	message := &wasmtypes.MsgExecuteContract{
 		Sender:   sgn.address.String(),
 		Contract: contractAddress,
 		Msg:      []byte(msg),
-	})
+	}
+	// Broadcast the transaction using the broadcastTx function
+	resp, err = c.broadcastTx(ctx, sgn, message)
 	if err != nil {
 		return resp, fmt.Errorf("broadcastTx: %s", err)
 	}
@@ -57,15 +69,18 @@ func (c *Client) Execute(ctx context.Context, signerName, contractAddress, msg s
 	return
 }
 
+// InstantiateJson simplifies sending an arbitrary JSON message as the instantiate message for a Wasm contract
 func (c *Client) InstantiateJson(ctx context.Context, signerName string, codeID uint64, label string, instantiateMsg interface{}, funds []sdktypes.Coin) (resp *txtypes.BroadcastTxResponse, err error) {
+	// Marshal the provided instantiate message into a byte array
 	marshalledMsg, err := json.Marshal(instantiateMsg)
 	if err != nil {
 		return nil, err
 	}
-
+	// Delegate the instantiation to the Instantiate function with the marshalled message
 	return c.Instantiate(ctx, signerName, codeID, label, string(marshalledMsg), funds)
 }
 
+// Instantiate broadcasts a transaction to instantiate a Wasm contract
 func (c *Client) Instantiate(ctx context.Context, signerName string, codeID uint64, label, instantiateMsg string, funds []sdktypes.Coin) (resp *txtypes.BroadcastTxResponse, err error) {
 	if instantiateMsg == "" {
 		return resp, errors.New("message code is empty")
@@ -96,6 +111,7 @@ func (c *Client) Instantiate(ctx context.Context, signerName string, codeID uint
 	return
 }
 
+// GetTxByHash retrieves transaction from the network. retries and sleepInterval params can be used to re-retrieve tx in case of error
 func (c *Client) GetTxByHash(ctx context.Context, txHash string, retries uint, sleepInterval time.Duration) (txResp *coretypes.ResultTx, err error) {
 	cl, err := c.clientCtx.GetNode()
 	if err != nil {
