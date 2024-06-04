@@ -32,31 +32,37 @@ import (
 )
 
 const (
+	// DefaultGasPriceWithDenom defines the default gas price denomination
 	DefaultGasPriceWithDenom = "0.1usei"
-	Bech32PrefixAccAddr      = "sei"
-	Bech32PrefixAccPub       = "seipub"
+	// Bech32PrefixAccAddr defines the Bech32 prefix for account addresses
+	Bech32PrefixAccAddr = "sei"
+	// Bech32PrefixAccPub defines the Bech32 prefix for account public keys
+	Bech32PrefixAccPub = "seipub"
 )
 
-type (
-	Client struct { //nolint:govet
-		// Execution clients
-		txFactory       txf.Factory
-		txClient        txtypes.ServiceClient
-		wasmQueryClient wasmtypes.QueryClient
-		bankQueryClient banktypes.QueryClient
-		clientCtx       client.Context
+// Client represents a Cosmos SDK client for interacting with a blockchain node
+type Client struct {
+	// Execution clients for sending transactions and querying data
+	// Execution clients
+	txFactory       txf.Factory
+	txClient        txtypes.ServiceClient
+	wasmQueryClient wasmtypes.QueryClient
+	bankQueryClient banktypes.QueryClient
+	clientCtx       client.Context
 
-		signers map[string]*signer
+	signers map[string]*signer
 
-		canSign bool
-	}
-	signer struct {
-		syncMux *sync.Mutex
-		address cosmosTypes.Address
-		name    string
-	}
-)
+	canSign bool
+}
 
+// signer holds information about a signer
+type signer struct {
+	syncMux *sync.Mutex
+	address cosmosTypes.Address
+	name    string
+}
+
+// NewClient creates a new Cosmos SDK client
 func NewClient(cfg Config) (c *Client, err error) {
 	err = cfg.Validate()
 	if err != nil {
@@ -121,6 +127,7 @@ func NewClient(cfg Config) (c *Client, err error) {
 	}, nil
 }
 
+// GetSignerAddresses returns a list of addresses for every added signer
 func (c *Client) GetSignerAddresses() (res []string) {
 	for _, s := range c.signers {
 		res = append(res, s.address.String())
@@ -129,6 +136,7 @@ func (c *Client) GetSignerAddresses() (res []string) {
 	return
 }
 
+// getSigner returns signer by name
 func (c *Client) getSigner(name string) (*signer, error) {
 	sgn, ok := c.signers[name]
 	if !ok {
@@ -138,6 +146,7 @@ func (c *Client) getSigner(name string) (*signer, error) {
 	return sgn, nil
 }
 
+// AddSigner adds signer by name, so it can be later used for signing
 func (c *Client) AddSigner(name, mnemonic string) error {
 	if name == "" {
 		return errors.New("empty name")
