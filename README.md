@@ -118,7 +118,7 @@ fmt.Println("Transaction Hash:", resp.TxHash)
 Before interacting with the blockchain and signing transactions, you need to add signers to your `sei.Client` instance:
 
 ```go
-err := client.AddSigner("my-signer", "your-mnemonic")
+address, err := client.AddSigner("my-signer", "your-mnemonic")
 if err != nil {
   // Handle error (e.g., invalid mnemonic)
 }

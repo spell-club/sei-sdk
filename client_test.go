@@ -26,7 +26,7 @@ func TestClient_SendTx(t *testing.T) {
 
 	client, err := NewClient(cfg)
 	assert.NilError(t, err)
-	err = client.AddSigner(testKeyName, testKeyMnemonic)
+	_, err = client.AddSigner(testKeyName, testKeyMnemonic)
 	assert.NilError(t, err)
 
 	type ClaimMsg struct {
@@ -68,7 +68,7 @@ func TestClient_Acc(t *testing.T) {
 
 	client, err := NewClient(cfg)
 	assert.NilError(t, err)
-	err = client.AddSigner(testKeyName, testKeyMnemonic)
+	_, err = client.AddSigner(testKeyName, testKeyMnemonic)
 	assert.NilError(t, err)
 
 	sgn, err := client.getSigner(testKeyName)

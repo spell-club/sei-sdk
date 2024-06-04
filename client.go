@@ -147,30 +147,31 @@ func (c *Client) getSigner(name string) (*signer, error) {
 }
 
 // AddSigner adds signer by name, so it can be later used for signing
-func (c *Client) AddSigner(name, mnemonic string) error {
+func (c *Client) AddSigner(name, mnemonic string) (string, error) {
 	if name == "" {
-		return errors.New("empty name")
+		return "", errors.New("empty name")
 	}
 	if mnemonic == "" {
-		return errors.New("empty mnemonic")
+		return "", errors.New("empty mnemonic")
 	}
 
 	if _, ok := c.signers[name]; ok {
-		return fmt.Errorf("duplicate signer %s", name)
+		return "", fmt.Errorf("duplicate signer %s", name)
 	}
 
 	path := hd.CreateHDPath(118, 0, 0).String()
 	signerInfo, err := c.clientCtx.Keyring.NewAccount(name, mnemonic, "", path, hd.Secp256k1)
 	if err != nil {
-		return fmt.Errorf("NewAccount: %w", err)
+		return "", fmt.Errorf("NewAccount: %w", err)
 	}
 
+	addr := signerInfo.GetAddress()
 	c.signers[name] = &signer{
 		syncMux: &sync.Mutex{},
-		address: signerInfo.GetAddress(),
+		address: addr,
 		name:    name,
 	}
 	c.canSign = true
 
-	return nil
+	return addr.String(), nil
 }
