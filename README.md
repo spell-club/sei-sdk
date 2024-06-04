@@ -64,7 +64,7 @@ fmt.Println("Balance:", balance.Amount.String())
 
 **3.2 Interacting with Wasm Contracts**
 
-**3.2.1 Sending Arbitrary JSON Messages (ExecuteJson):**
+**3.2.1 Sending Arbitrary JSON Messages (ExecuteJSON):**
 
 ```go
 contractAddress := "sei1...” // Replace with the contract address
@@ -79,7 +79,7 @@ var msgData = struct {
   Data:   "10usei",
 }
 
-resp, err := client.ExecuteJson(context.Background(), signerName, contractAddress, msgData)
+resp, err := client.ExecuteJSON(context.Background(), signerName, contractAddress, msgData)
 if err != nil {
   // Handle error
 }
@@ -87,7 +87,7 @@ if err != nil {
 fmt.Println("Transaction Hash:", resp.TxHash)
 ```
 
-**3.2.2 Sending Arbitrary JSON Messages for Contract Instantiation (InstantiateJson):**
+**3.2.2 Sending Arbitrary JSON Messages for Contract Instantiation (InstantiateJSON):**
 
 ```go
 codeID := uint64(123)       // Replace with the Wasm code ID for your contract
@@ -105,7 +105,7 @@ funds := []sdktypes.Coin{
   // Define coins to send for contract instantiation (optional)
 }
 
-resp, err := client.InstantiateJson(context.Background(), signerName, codeID, label, instantiateMsg, funds)
+resp, err := client.InstantiateJSON(context.Background(), signerName, codeID, label, instantiateMsg, funds)
 if err != nil {
   // Handle error
 }

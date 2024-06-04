@@ -15,16 +15,13 @@ import (
 // - retrieves the proper acc sequence via GetAccountNumberSequence
 // - runs the simulation via Simulate
 // - adjusts Gas
-func (c *Client) broadcastTx(ctx context.Context, sgn *signer, msgs ...sdktypes.Msg) (resp *txtypes.BroadcastTxResponse, err error) {
+func (c *Client) broadcastTx(ctx context.Context, sgn signer, msgs ...sdktypes.Msg) (resp *txtypes.BroadcastTxResponse, err error) {
 	if !c.canSign {
 		return resp, errors.New("can't sign. Add signature before sending tx")
 	}
-	if sgn == nil {
+	if sgn.address.Empty() {
 		return resp, errors.New("empty signer")
 	}
-
-	sgn.syncMux.Lock()
-	defer sgn.syncMux.Unlock()
 
 	num, seq, err := c.clientCtx.AccountRetriever.GetAccountNumberSequence(c.clientCtx, sgn.address.Bytes())
 	if err != nil {
