@@ -2,7 +2,6 @@ package sdk
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"gotest.tools/assert"
@@ -38,12 +37,7 @@ func TestClient_SendTx(t *testing.T) {
 
 	var msg ClaimMsg
 	msg.Claim.Address = sdktypes.AccAddress(secp256k1.GenPrivKey().PubKey().Address()).String()
-	marshalledMsg, err := json.Marshal(msg)
-	if err != nil {
-		t.Fatalf("Marshal: %s", err)
-	}
-
-	hash, err := client.Execute(context.Background(), testKeyName, "sei154p8wkvvgvkrm849ahnw9xwx6v4yj8c9wmfwc83x4u6shcmdyq9qavegg7", string(marshalledMsg))
+	hash, err := client.ExecuteJson(context.Background(), testKeyName, "sei154p8wkvvgvkrm849ahnw9xwx6v4yj8c9wmfwc83x4u6shcmdyq9qavegg7", msg)
 	assert.NilError(t, err)
 
 	t.Logf("hash: %s", hash.GetTxResponse().TxHash)

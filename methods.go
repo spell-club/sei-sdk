@@ -3,6 +3,7 @@ package sdk
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -23,6 +24,15 @@ func (c *Client) GetBankBalance(ctx context.Context, address, denom string) (*ba
 		Denom:   denom,
 	}
 	return c.bankQueryClient.Balance(ctx, req)
+}
+
+func (c *Client) ExecuteJson(ctx context.Context, signerName, contractAddress string, msg interface{}) (resp *txtypes.BroadcastTxResponse, err error) {
+	marshalledMsg, err := json.Marshal(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.Execute(ctx, signerName, contractAddress, string(marshalledMsg))
 }
 
 func (c *Client) Execute(ctx context.Context, signerName, contractAddress, msg string) (resp *txtypes.BroadcastTxResponse, err error) {
@@ -47,6 +57,15 @@ func (c *Client) Execute(ctx context.Context, signerName, contractAddress, msg s
 	return
 }
 
+func (c *Client) InstantiateJson(ctx context.Context, signerName string, codeID uint64, label string, instantiateMsg interface{}, funds []sdktypes.Coin) (resp *txtypes.BroadcastTxResponse, err error) {
+	marshalledMsg, err := json.Marshal(instantiateMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.Instantiate(ctx, signerName, codeID, label, string(marshalledMsg), funds)
+}
+
 func (c *Client) Instantiate(ctx context.Context, signerName string, codeID uint64, label, instantiateMsg string, funds []sdktypes.Coin) (resp *txtypes.BroadcastTxResponse, err error) {
 	if instantiateMsg == "" {
 		return resp, errors.New("message code is empty")
@@ -68,6 +87,7 @@ func (c *Client) Instantiate(ctx context.Context, signerName string, codeID uint
 		Msg:    []byte(instantiateMsg),
 		Funds:  funds,
 	}
+
 	resp, err = c.broadcastTx(ctx, sgn, message)
 	if err != nil {
 		return resp, fmt.Errorf("broadcastTx: %s", err)
@@ -81,22 +101,22 @@ func (c *Client) GetTxByHash(ctx context.Context, txHash string, retries uint, s
 	if err != nil {
 		return txResp, fmt.Errorf("GetNode: %s", err)
 	}
+
 	decodedTxHash, err := hex.DecodeString(txHash)
 	if err != nil {
 		return txResp, fmt.Errorf("DecodeString: %s", err)
 	}
 
-	if retries == 0 {
-		retries = 1
-	}
-	for range retries {
+	// first is request, after n retries
+	for i := range retries + 1 {
 		select {
 		case <-ctx.Done():
 			return txResp, context.Canceled
 		default:
 		}
 
-		if sleepInterval != 0 {
+		// do not sleep on first request
+		if sleepInterval != 0 && i > 0 {
 			time.Sleep(sleepInterval)
 		}
 
