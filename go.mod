@@ -13,7 +13,6 @@ replace (
 require (
 	github.com/CosmWasm/wasmd v0.0.0-00010101000000-000000000000
 	github.com/cosmos/cosmos-sdk v0.45.10
-	github.com/sirupsen/logrus v1.9.3
 	github.com/tendermint/tendermint v0.37.0-dev
 	google.golang.org/grpc v1.64.0
 	gotest.tools v2.2.0+incompatible
