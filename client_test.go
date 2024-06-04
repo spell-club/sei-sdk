@@ -14,6 +14,8 @@ import (
 const (
 	testKeyName     = "name"
 	testKeyMnemonic = "mnemonic"
+	TestnetGRPCHost = "grpc.atlantic-2.seinetwork.io:443"
+	TestnetRPCHost  = "https://rpc.atlantic-2.seinetwork.io"
 )
 
 func TestClient_SendTx(t *testing.T) {

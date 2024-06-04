@@ -35,8 +35,6 @@ const (
 	DefaultGasPriceWithDenom = "0.1usei"
 	Bech32PrefixAccAddr      = "sei"
 	Bech32PrefixAccPub       = "seipub"
-	TestnetGRPCHost          = "grpc.atlantic-2.seinetwork.io:443"
-	TestnetRPCHost           = "https://rpc.atlantic-2.seinetwork.io"
 )
 
 type (
