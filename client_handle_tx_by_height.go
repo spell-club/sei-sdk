@@ -13,7 +13,7 @@ const searchByHeightQuery = `tx.height>%d AND tx.height<%d AND wasm._contract_ad
 
 func (c *Client) HandleTxsByHeight(ctx context.Context, contractAddress string, heightFrom, heightTo int64, acknowledge func(ctx context.Context, msg []abci.Event) error) error {
 	query := fmt.Sprintf(searchByHeightQuery, heightFrom, heightTo, contractAddress)
-	tendermintNode, err := c.sign.ctx.GetNode()
+	tendermintNode, err := c.clientCtx.GetNode()
 	if err != nil {
 		return err
 	}

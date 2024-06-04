@@ -6,7 +6,7 @@ import (
 )
 
 func (c *Client) GetLatestHeight(ctx context.Context) (int64, error) {
-	tendermintNode, err := c.sign.ctx.GetNode()
+	tendermintNode, err := c.clientCtx.GetNode()
 	if err != nil {
 		return 0, err
 	}

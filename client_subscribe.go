@@ -7,14 +7,14 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-var subscribeQuery = "tm.event='Tx' AND wasm._contract_address CONTAINS '%s' AND wasm.action='execute_claim'"
+var subscribeQuery = "tm.event='Tx' AND wasm._contract_address CONTAINS '%s'"
 
 func (c *Client) Subscribe(ctx context.Context, contractAddress string, acknowledge func(ctx context.Context, msg []abci.Event) error) error {
 	// Create context to control explicitly ws subscription
 	wsCtx, cancelWsCtx := context.WithCancel(context.Background())
 	defer cancelWsCtx()
 
-	tendermintNode, err := c.sign.ctx.GetNode()
+	tendermintNode, err := c.clientCtx.GetNode()
 	if err != nil {
 		return fmt.Errorf("ctx.GetNode(): %v", err)
 	}
