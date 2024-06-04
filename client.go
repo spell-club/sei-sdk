@@ -137,6 +137,7 @@ func (c *Client) getSigner(name string) (*signer, error) {
 
 	return sgn, nil
 }
+
 func (c *Client) AddSigner(name, mnemonic string) error {
 	if name == "" {
 		return errors.New("empty name")
@@ -144,6 +145,7 @@ func (c *Client) AddSigner(name, mnemonic string) error {
 	if mnemonic == "" {
 		return errors.New("empty mnemonic")
 	}
+
 	if _, ok := c.signers[name]; ok {
 		return fmt.Errorf("duplicate signer %s", name)
 	}
