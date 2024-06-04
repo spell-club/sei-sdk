@@ -1,4 +1,4 @@
-## sei-sdk: Interact Sei Blockchain from Go
+## sei-sdk: Interact with Sei from Golang
 
 The sei-sdk library provides a user-friendly Go interface for interacting with the Sei blockchain. It simplifies sending transactions, querying data, and managing signers for your applications.
 
