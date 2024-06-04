@@ -33,7 +33,7 @@ func (basicAuth) RequireTransportSecurity() bool {
 	return false
 }
 
-func getGRPCConn(cfg Config) (*grpc.ClientConn, error) { //nolint:gocritic
+func getGRPCConn(cfg Config) (*grpc.ClientConn, error) {
 	grpcHost := cfg.GRPCHost
 	grpcDialOptions := []grpc.DialOption{grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(1024 * 1024 * 1024))}
 
