@@ -3,7 +3,6 @@ package sdk
 import (
 	"errors"
 	"fmt"
-	"sync"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -43,21 +42,19 @@ const (
 // Client represents a Cosmos SDK client for interacting with a blockchain node
 type Client struct {
 	// Execution clients for sending transactions and querying data
-	// Execution clients
-	txFactory       txf.Factory
 	txClient        txtypes.ServiceClient
 	wasmQueryClient wasmtypes.QueryClient
 	bankQueryClient banktypes.QueryClient
-	clientCtx       client.Context
 
-	signers map[string]*signer
+	signers   map[string]signer
+	clientCtx client.Context
+	txFactory txf.Factory
 
 	canSign bool
 }
 
 // signer holds information about a signer
 type signer struct {
-	syncMux *sync.Mutex
 	address cosmosTypes.Address
 	name    string
 }
@@ -123,7 +120,7 @@ func NewClient(cfg Config) (c *Client, err error) {
 		bankQueryClient: banktypes.NewQueryClient(conn),
 
 		clientCtx: clientCtx,
-		signers:   make(map[string]*signer),
+		signers:   make(map[string]signer),
 	}, nil
 }
 
@@ -137,10 +134,10 @@ func (c *Client) GetSignerAddresses() (res []string) {
 }
 
 // getSigner returns signer by name
-func (c *Client) getSigner(name string) (*signer, error) {
+func (c *Client) getSigner(name string) (signer, error) {
 	sgn, ok := c.signers[name]
 	if !ok {
-		return nil, fmt.Errorf("signer with name %s not added", name)
+		return signer{}, fmt.Errorf("signer with name %s not added", name)
 	}
 
 	return sgn, nil
@@ -166,8 +163,7 @@ func (c *Client) AddSigner(name, mnemonic string) (string, error) {
 	}
 
 	addr := signerInfo.GetAddress()
-	c.signers[name] = &signer{
-		syncMux: &sync.Mutex{},
+	c.signers[name] = signer{
 		address: addr,
 		name:    name,
 	}

@@ -32,8 +32,8 @@ func (c *Client) GetBankBalance(ctx context.Context, address, denom string) (*ba
 	return c.bankQueryClient.Balance(ctx, req)
 }
 
-// ExecuteJson simplifies sending an arbitrary JSON message to a Wasm contract
-func (c *Client) ExecuteJson(ctx context.Context, signerName, contractAddress string, msg interface{}) (resp *txtypes.BroadcastTxResponse, err error) {
+// ExecuteJSON simplifies sending an arbitrary JSON message to a Wasm contract
+func (c *Client) ExecuteJSON(ctx context.Context, signerName, contractAddress string, msg interface{}) (resp *txtypes.BroadcastTxResponse, err error) {
 	// Marshal the provided message into a byte array
 	marshalledMsg, err := json.Marshal(msg)
 	if err != nil {
@@ -69,8 +69,8 @@ func (c *Client) Execute(ctx context.Context, signerName, contractAddress, msg s
 	return
 }
 
-// InstantiateJson simplifies sending an arbitrary JSON message as the instantiate message for a Wasm contract
-func (c *Client) InstantiateJson(ctx context.Context, signerName string, codeID uint64, label string, instantiateMsg interface{}, funds []sdktypes.Coin) (resp *txtypes.BroadcastTxResponse, err error) {
+// InstantiateJSON simplifies sending an arbitrary JSON message as the instantiate message for a Wasm contract
+func (c *Client) InstantiateJSON(ctx context.Context, signerName string, codeID uint64, label string, instantiateMsg interface{}, funds []sdktypes.Coin) (resp *txtypes.BroadcastTxResponse, err error) {
 	// Marshal the provided instantiate message into a byte array
 	marshalledMsg, err := json.Marshal(instantiateMsg)
 	if err != nil {
