@@ -4,9 +4,8 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"strconv"
-
 	abci "github.com/tendermint/tendermint/abci/types"
+	"strconv"
 )
 
 const searchByHeightQuery = `tx.height>%d AND tx.height<%d AND wasm._contract_address CONTAINS '%s'`

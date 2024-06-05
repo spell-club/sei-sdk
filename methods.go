@@ -167,3 +167,49 @@ func (c *Client) GetTxByHash(ctx context.Context, txHash string, retries uint, s
 
 	return
 }
+
+// GetTxMetaResponseByHash retrieves transaction metadata response from the network. retries and sleepInterval params can be used to re-retrieve tx in case of error
+func (c *Client) GetTxMetaResponseByHash(ctx context.Context, txHash string, retries uint, sleepInterval time.Duration) (txResp *txtypes.GetTxResponse, err error) {
+	// first is request, after n retries
+	for i := range retries + 1 {
+		select {
+		case <-ctx.Done():
+			return txResp, context.Canceled
+		default:
+		}
+
+		// do not sleep on first request
+		if sleepInterval != 0 && i > 0 {
+			time.Sleep(sleepInterval)
+		}
+
+		txResp, err = c.txClient.GetTx(ctx, &txtypes.GetTxRequest{Hash: txHash})
+		if err != nil {
+			if strings.Contains(err.Error(), "tx not found") {
+				continue
+			}
+
+			return txResp, fmt.Errorf("GetTx: %w", err)
+		}
+
+		if txResp == nil {
+			continue
+		}
+
+		if txResp.TxResponse.Code != 0 {
+			return txResp, fmt.Errorf("non-zero code: %d", txResp.TxResponse.Code)
+		}
+
+		break
+	}
+
+	if err != nil {
+		return txResp, fmt.Errorf("GetTx: %w", err)
+	}
+
+	if txResp == nil || len(txResp.TxResponse.TxHash) == 0 {
+		return txResp, errors.New("fail to get tx after retries")
+	}
+
+	return
+}
